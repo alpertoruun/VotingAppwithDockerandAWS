@@ -37,3 +37,19 @@ class RegisterForm(FlaskForm):
             self.password.errors.append("Passwords must match")
             return False
         return True
+    
+class RequestResetForm(FlaskForm):
+    email = EmailField('Email', validators=[DataRequired(), Email()])
+
+
+class PasswordChangeForm(FlaskForm):
+    password = PasswordField(
+        "Password", validators=[DataRequired(), Length(min=6, max=25)]
+    )
+    confirm = PasswordField(
+        "Repeat Password",
+        validators=[
+            DataRequired(),
+            EqualTo("password", message="Passwords must match.")
+        ],
+    )
