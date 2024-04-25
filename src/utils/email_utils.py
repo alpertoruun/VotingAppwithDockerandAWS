@@ -10,7 +10,7 @@ def send_email(subject, recipient, body):
 def send_reset_email(user, token):
     mail = app.extensions.get('mail')
     msg = Message('Password Reset Request', sender=app.config['MAIL_USERNAME'], recipients=[user.email])
-    reset_url = url_for('accounts.reset_password_request', token=token, _external=True)
+    reset_url = url_for('accounts.reset_password', token=token, _external=True)
     msg.body = f"""To reset your password, visit the following link:
 {reset_url}
 

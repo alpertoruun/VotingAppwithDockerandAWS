@@ -5,6 +5,7 @@ from flask import current_app
 from datetime import datetime, timezone
 from src import db
 from src.accounts.models import PasswordResetToken
+import pytz
 
 def generate_reset_token():
     """Generate a secure random string for password reset token."""
@@ -16,7 +17,7 @@ def create_password_reset_entry(user_id):
     reset_entry = PasswordResetToken(
         user_id=user_id,
         token=token,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(timezone.utc),  # Zaman dilimi bilgisi ekleniyor
         used=False
     )
     db.session.add(reset_entry)
@@ -24,10 +25,13 @@ def create_password_reset_entry(user_id):
     return token
 
 def verify_reset_token(token):
-    """Verify the password reset token and return the user ID if valid."""
-    reset_entry = PasswordResetToken.query.filter_by(token=token, used=False).first()
-    if reset_entry and (datetime.now(timezone.utc) - reset_entry.created_at).total_seconds() < 600:
-        reset_entry.used = True
-        db.session.commit()
-        return reset_entry.user_id
-    return None
+    reset_entry = PasswordResetToken.query.filter_by(token=token).first()
+    if not reset_entry or reset_entry.used:
+        return None  
+    
+    utc_now = datetime.now(timezone.utc)
+    utc_created_at = reset_entry.created_at.replace(tzinfo=timezone.utc) if reset_entry.created_at.tzinfo is None else reset_entry.created_at
+
+    if (utc_now - utc_created_at).total_seconds() > 600:
+        return None  
+    return reset_entry.user_id

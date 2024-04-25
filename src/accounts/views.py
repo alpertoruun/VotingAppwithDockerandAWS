@@ -2,17 +2,42 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_required, login_user, logout_user, current_user
 
 from src.utils.email_utils import send_email, send_reset_email
-from src.utils.password_token_utils import create_password_reset_entry
+from src.utils.password_token_utils import create_password_reset_entry, verify_reset_token
 
 
 from src import bcrypt, db
-from src.accounts.models import User
+from src.accounts.models import User, PasswordResetToken
 
-from .forms import LoginForm, RegisterForm, RequestResetForm
+from .forms import LoginForm, RegisterForm, RequestResetForm, PasswordChangeForm
 
 accounts_bp = Blueprint("accounts", __name__)
 
+@accounts_bp.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('core.home'))
 
+    user_id = verify_reset_token(token)
+    if not user_id:
+        flash('This is an invalid or expired token', 'warning')
+        return redirect(url_for('accounts.reset_password_request'))
+
+    form = PasswordChangeForm()
+    if form.validate_on_submit():
+        user = User.query.get(user_id)
+        if user:
+            user.password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
+            # Şifre güncelleme işlemi tamamlandı, şimdi token'ı kullanıldı olarak işaretle
+            reset_entry = PasswordResetToken.query.filter_by(user_id=user_id, token=token, used=False).first()
+            if reset_entry:
+                reset_entry.used = True
+                db.session.commit()
+            flash('Your password has been updated!', 'success')
+            return redirect(url_for('accounts.login'))
+        else:
+            flash('User not found.', 'danger')
+            return redirect(url_for('accounts.login'))
+    return render_template('accounts/reset_password.html', form=form)
 
 @accounts_bp.route('/reset_password_request', methods=['GET', 'POST'])
 def reset_password_request():
