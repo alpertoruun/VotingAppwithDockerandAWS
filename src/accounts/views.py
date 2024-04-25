@@ -1,5 +1,6 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_required, login_user, logout_user, current_user
+from src.utils.email_utils import send_email
 
 from src import bcrypt, db
 from src.accounts.models import User
@@ -19,10 +20,9 @@ def register():
         user = User(email=form.email.data, password=form.password.data)
         db.session.add(user)
         db.session.commit()
-
+        send_email("Welcome to Our App!", user.email, "Thank you for signing up. We're glad to have you!")
         login_user(user)
         flash("You registered and are now logged in. Welcome!", "success")
-
         return redirect(url_for("core.home"))
 
     return render_template("accounts/register.html", form=form)

@@ -23,6 +23,11 @@ class DevelopmentConfig(Config):
     DEBUG = True
     WTF_CSRF_ENABLED = False
     DEBUG_TB_ENABLED = True
+    MAIL_SERVER = 'smtp.gmail.com'
+    MAIL_PORT = 587
+    MAIL_USE_TLS = True
+    MAIL_USERNAME = 'alpertorun4455@gmail.com'
+    MAIL_PASSWORD = 'weew audi svvu mbio'
 
 
 class TestingConfig(Config):
