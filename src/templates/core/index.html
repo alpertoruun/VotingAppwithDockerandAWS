@@ -31,14 +31,34 @@
         <div class="mb-3">
           <label class="form-label">Seçenekler</label>
           <div id="optionsContainer">
-            <!-- Seçenek alanları JavaScript ile eklenecek -->
+            <!-- İlk seçenek için giriş -->
+            <div class="input-group mb-3">
+              <input type="text" class="form-control" name="options" required>
+            </div>
+            <!-- İkinci seçenek için giriş -->
+            <div class="input-group mb-3">
+              <input type="text" class="form-control" name="options" required>
+            </div>
           </div>
+          <button class="btn btn-outline-secondary addOption" type="button">+</button>
         </div>
         <!-- Seçmen Bilgileri -->
         <h2 class="text-left">Seçmen Bilgileri</h2>
         <div id="votersContainer">
-          <!-- Seçmen bilgileri alanları JavaScript ile eklenecek -->
-        </div>
+            <!-- İlk seçmen için giriş -->
+            <div class="input-group mb-3">
+              <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
+              <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
+              <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>
+            </div>
+            <!-- İkinci seçmen için giriş -->
+            <div class="input-group mb-3">
+              <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
+              <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
+              <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>
+            </div>
+          </div>
+          <button class="btn btn-outline-secondary addVoter" type="button">+</button>
         <button type="submit" class="btn btn-primary mt-3">Oylama Oluştur</button>
       </form>
     </div>
@@ -46,117 +66,73 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Tarih işlevselliği
-      var startDateElement = document.getElementById('startDate');
-      var endDateElement = document.getElementById('endDate');
-      var now = new Date();
-      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-      var today = now.toISOString().slice(0, 16);
-    
-      startDateElement.setAttribute('min', today);
-      startDateElement.addEventListener('change', function() {
-        endDateElement.setAttribute('min', startDateElement.value);
-      });
-    
-      // Seçenekler ve seçmenler için dinamik element ekleme işlevleri
-      function addOption() {
-        var newOptionEntry = document.createElement('div');
-        newOptionEntry.classList.add('input-group', 'mb-3');
-        newOptionEntry.innerHTML =
-          '<input type="text" class="form-control" name="options" required>' +
-          '<button class="btn btn-outline-secondary removeOption" type="button">&minus;</button>';
-        var optionsContainer = document.getElementById('optionsContainer');
-        optionsContainer.appendChild(newOptionEntry);
-        updateOptionListeners();
-      }
-    
-      function addVoter() {
-        var newVoterEntry = document.createElement('div');
-        newVoterEntry.classList.add('input-group', 'mb-3');
-        newVoterEntry.innerHTML =
-          '<input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>' +
-          '<input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>' +
-          '<input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>' +
-          '<button class="btn btn-outline-secondary removeVoter" type="button">&minus;</button>';
-        var votersContainer = document.getElementById('votersContainer');
-        votersContainer.appendChild(newVoterEntry);
-        updateVoterListeners();
-      }
-    
-      function removeOption(event) {
-        var optionsContainer = document.getElementById('optionsContainer');
-        if (optionsContainer.children.length > 2) {
-          var optionEntry = event.target.closest('.input-group');
-          optionsContainer.removeChild(optionEntry);
-          updateOptionListeners();
-        }
-      }
-    
-      function removeVoter(event) {
-        var votersContainer = document.getElementById('votersContainer');
-        if (votersContainer.children.length > 2) {
-          var voterEntry = event.target.closest('.input-group');
-          votersContainer.removeChild(voterEntry);
-          updateVoterListeners();
-        }
-      }
-    
-      function updateOptionListeners() {
-        var removeOptionButtons = document.querySelectorAll('.removeOption');
-        removeOptionButtons.forEach(function(button) {
-          button.removeEventListener('click', removeOption);
-          button.addEventListener('click', removeOption);
-        });
-        // En az iki seçenek olmalıdır
-        if (removeOptionButtons.length <= 2) {
-          removeOptionButtons.forEach(function(button) {
-            button.disabled = true;
-          });
-        }
-      }
-    
-      function updateVoterListeners() {
-        var removeVoterButtons = document.querySelectorAll('.removeVoter');
-        removeVoterButtons.forEach(function(button) {
-          button.removeEventListener('click', removeVoter);
-          button.addEventListener('click', removeVoter);
-        });
-        // En az iki seçmen olmalıdır
-        if (removeVoterButtons.length <= 2) {
-          removeVoterButtons.forEach(function(button) {
-            button.disabled = true;
-          });
-        }
-      }
-    
-      // İlk iki seçenek ve seçmeni ekleme
-      addOption();
-      addOption();
-      addVoter();
-      addVoter();
-    
-      // Form gönderme işlevselliği
-      document.getElementById('createElectionForm').addEventListener('submit', function(event) {
-        // Burada tarih doğrulaması yapıldı
-        // İlave doğrulamalar eklenebilir
-        if (!validateDates()) {
-          event.preventDefault();
-        }
-      });
-    
-      function validateDates() {
-        var startDate = new Date(startDateElement.value);
-        var endDate = new Date(endDateElement.value);
-    
-        if (startDate >= endDate) {
-          alert('Başlangıç tarihi bitiş tarihinden önce olmalıdır.');
-          return false;
-        }
-        return true;
-      }
-    });
-    </script>
-    
+document.addEventListener('DOMContentLoaded', function() {
+  // Tarih işlevselliği
+  var startDateElement = document.getElementById('startDate');
+  var endDateElement = document.getElementById('endDate');
+  var now = new Date();
+  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+  var today = now.toISOString().slice(0, 16);
+
+  startDateElement.setAttribute('min', today);
+  startDateElement.addEventListener('change', function() {
+    endDateElement.setAttribute('min', startDateElement.value);
+  });
+
+  // Seçenek ve seçmen ekleme fonksiyonları
+  function addOption() {
+    var optionsContainer = document.getElementById('optionsContainer');
+    var newOptionEntry = document.createElement('div');
+    newOptionEntry.classList.add('input-group', 'mb-3');
+    newOptionEntry.innerHTML = `
+      <input type="text" class="form-control" name="options" required>
+      <button class="btn btn-outline-secondary removeOption" type="button">&minus;</button>
+    `;
+    optionsContainer.appendChild(newOptionEntry);
+  }
+
+  function addVoter() {
+    var votersContainer = document.getElementById('votersContainer');
+    var newVoterEntry = document.createElement('div');
+    newVoterEntry.classList.add('input-group', 'mb-3');
+    newVoterEntry.innerHTML = `
+      <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
+      <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
+      <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>
+      <button class="btn btn-outline-secondary removeVoter" type="button">&minus;</button>
+    `;
+    votersContainer.appendChild(newVoterEntry);
+  }
+
+  // Seçenek ve seçmen kaldırma işlevleri
+  document.getElementById('optionsContainer').addEventListener('click', function(event) {
+    if (event.target.classList.contains('removeOption')) {
+      var optionEntry = event.target.closest('.input-group');
+      optionEntry.remove();
+    }
+  });
+
+  document.getElementById('votersContainer').addEventListener('click', function(event) {
+    if (event.target.classList.contains('removeVoter')) {
+      var voterEntry = event.target.closest('.input-group');
+      voterEntry.remove();
+    }
+  });
+
+  // '+' butonlarının olay dinleyicileri
+  document.querySelector('.addOption').addEventListener('click', addOption);
+  document.querySelector('.addVoter').addEventListener('click', addVoter);
+
+  // Form gönderme işlevselliği
+  document.getElementById('createElectionForm').addEventListener('submit', function(event) {
+    // Tarih doğrulaması
+    if (startDateElement.value && endDateElement.value && startDateElement.value >= endDateElement.value) {
+      alert('Başlangıç tarihi bitiş tarihinden önce olmalıdır.');
+      event.preventDefault();
+    }
+  });
+});
+
+</script>
 
 {% endblock %}
