@@ -5,6 +5,8 @@ from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail
+from flask_wtf import CSRFProtect
+
 
 app = Flask(__name__)
 app.config.from_object(config("APP_SETTINGS"))
@@ -15,6 +17,9 @@ login_manager.init_app(app)
 bcrypt = Bcrypt(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+
+csrf = CSRFProtect(app)
+
 
 # Registering blueprints
 from src.accounts.views import accounts_bp
