@@ -38,9 +38,16 @@ def create_election():
             option = Option(description=option_desc, election_id=election.id)
             db.session.add(option)
         
+
         for tc, name, surname, email in zip(voter_tcs, voter_names, voter_surnames, voter_emails):
-            voter = Voter(tc=tc, name=name, surname=surname, email=email)
-            db.session.add(voter)
+            voter = Voter.query.filter_by(tc=tc).first()
+            if voter:
+                voter.name = name
+                voter.surname = surname
+                voter.email = email
+            else:
+                voter = Voter(tc=tc, name=name, surname=surname, email=email)
+                db.session.add(voter)
 
         db.session.commit() 
 
