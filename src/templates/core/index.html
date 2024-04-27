@@ -47,21 +47,27 @@
         <div id="votersContainer">
             <!-- İlk seçmen için giriş -->
             <div class="input-group mb-3">
-                <input type="text" class="form-control" name="voterTc[]" placeholder="Tc kimlik No" required>
+                <input type="text" class="form-control" name="voterTc[]" placeholder="Tc kimlik No" pattern="\d{11}" title="TC Kimlik No 11 haneli olmalıdır." required>
                 <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
                 <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
                 <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>
             </div>
             <!-- İkinci seçmen için giriş -->
             <div class="input-group mb-3">
-                <input type="text" class="form-control" name="voterTc[]" placeholder="Tc kimlik No" required>
+                <input type="text" class="form-control" name="voterTc[]" placeholder="Tc kimlik No" pattern="\d{11}" title="TC Kimlik No 11 haneli olmalıdır." required>
                 <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
                 <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
                 <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>
             </div>
           </div>
-          <button class="btn btn-outline-secondary addVoter" type="button">+</button>
-        <button type="submit" class="btn btn-primary mt-3">Oylama Oluştur</button>
+          <div class="mb-3">
+            <button class="btn btn-outline-secondary addVoter" type="button">+</button>
+          </div>
+          
+          <!-- Oylama Oluştur Butonu -->
+          <div class="mb-3">
+            <button type="submit" class="btn btn-primary mt-3">Oylama Oluştur</button>
+          </div>
       </form>
     </div>
   </div>
@@ -103,7 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var newVoterEntry = document.createElement('div');
     newVoterEntry.classList.add('input-group', 'mb-3');
     newVoterEntry.innerHTML = `
-      <input type="text" class="form-control" name="voterTc[]" placeholder="Tc kimlik No" required>
+      <input type="text" class="form-control" name="voterTc[]" placeholder="Tc kimlik No" pattern="\d{11}" title="TC Kimlik No 11 haneli olmalıdır." required>
       <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
       <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
       <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>

@@ -44,6 +44,7 @@ def create_election():
 
         db.session.commit() 
 
-        flash('Oylama başarıyla oluşturuldu!')
+        flash('Oylama başarıyla oluşturuldu!', "success")
+        return redirect(url_for("core.create_election"))
         
     return render_template("core/index.html")
