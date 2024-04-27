@@ -1,6 +1,162 @@
 {% extends "_base.html" %}
-{% block content %}
 
-<h1 class="text-center">Welcome {{current_user.email}}!</h1>
+{% block content %}
+<div class="container mt-4">
+  <div class="row">
+    <div class="col">
+      <h2 class="text-left">Oylama Oluştur</h2>
+      <form id="createElectionForm">
+        <!-- Başlık -->
+        <div class="mb-3">
+          <label for="title" class="form-label">Başlık</label>
+          <input type="text" class="form-control" id="title" name="title" required>
+        </div>
+        <!-- Açıklama -->
+        <div class="mb-3">
+          <label for="description" class="form-label">Açıklama</label>
+          <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+        </div>
+        <!-- Başlangıç ve Bitiş Tarihleri -->
+        <div class="mb-3 row">
+          <div class="col">
+            <label for="startDate" class="form-label">Başlangıç Tarihi</label>
+            <input type="datetime-local" class="form-control" id="startDate" name="startDate" required>
+          </div>
+          <div class="col">
+            <label for="endDate" class="form-label">Bitiş Tarihi</label>
+            <input type="datetime-local" class="form-control" id="endDate" name="endDate" required>
+          </div>
+        </div>
+        <!-- Seçenekler -->
+        <div class="mb-3">
+          <label class="form-label">Seçenekler</label>
+          <div id="optionsContainer">
+            <!-- Seçenek alanları JavaScript ile eklenecek -->
+          </div>
+        </div>
+        <!-- Seçmen Bilgileri -->
+        <h2 class="text-left">Seçmen Bilgileri</h2>
+        <div id="votersContainer">
+          <!-- Seçmen bilgileri alanları JavaScript ile eklenecek -->
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Oylama Oluştur</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Tarih işlevselliği
+      var startDateElement = document.getElementById('startDate');
+      var endDateElement = document.getElementById('endDate');
+      var now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      var today = now.toISOString().slice(0, 16);
+    
+      startDateElement.setAttribute('min', today);
+      startDateElement.addEventListener('change', function() {
+        endDateElement.setAttribute('min', startDateElement.value);
+      });
+    
+      // Seçenekler ve seçmenler için dinamik element ekleme işlevleri
+      function addOption() {
+        var newOptionEntry = document.createElement('div');
+        newOptionEntry.classList.add('input-group', 'mb-3');
+        newOptionEntry.innerHTML =
+          '<input type="text" class="form-control" name="options" required>' +
+          '<button class="btn btn-outline-secondary removeOption" type="button">&minus;</button>';
+        var optionsContainer = document.getElementById('optionsContainer');
+        optionsContainer.appendChild(newOptionEntry);
+        updateOptionListeners();
+      }
+    
+      function addVoter() {
+        var newVoterEntry = document.createElement('div');
+        newVoterEntry.classList.add('input-group', 'mb-3');
+        newVoterEntry.innerHTML =
+          '<input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>' +
+          '<input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>' +
+          '<input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>' +
+          '<button class="btn btn-outline-secondary removeVoter" type="button">&minus;</button>';
+        var votersContainer = document.getElementById('votersContainer');
+        votersContainer.appendChild(newVoterEntry);
+        updateVoterListeners();
+      }
+    
+      function removeOption(event) {
+        var optionsContainer = document.getElementById('optionsContainer');
+        if (optionsContainer.children.length > 2) {
+          var optionEntry = event.target.closest('.input-group');
+          optionsContainer.removeChild(optionEntry);
+          updateOptionListeners();
+        }
+      }
+    
+      function removeVoter(event) {
+        var votersContainer = document.getElementById('votersContainer');
+        if (votersContainer.children.length > 2) {
+          var voterEntry = event.target.closest('.input-group');
+          votersContainer.removeChild(voterEntry);
+          updateVoterListeners();
+        }
+      }
+    
+      function updateOptionListeners() {
+        var removeOptionButtons = document.querySelectorAll('.removeOption');
+        removeOptionButtons.forEach(function(button) {
+          button.removeEventListener('click', removeOption);
+          button.addEventListener('click', removeOption);
+        });
+        // En az iki seçenek olmalıdır
+        if (removeOptionButtons.length <= 2) {
+          removeOptionButtons.forEach(function(button) {
+            button.disabled = true;
+          });
+        }
+      }
+    
+      function updateVoterListeners() {
+        var removeVoterButtons = document.querySelectorAll('.removeVoter');
+        removeVoterButtons.forEach(function(button) {
+          button.removeEventListener('click', removeVoter);
+          button.addEventListener('click', removeVoter);
+        });
+        // En az iki seçmen olmalıdır
+        if (removeVoterButtons.length <= 2) {
+          removeVoterButtons.forEach(function(button) {
+            button.disabled = true;
+          });
+        }
+      }
+    
+      // İlk iki seçenek ve seçmeni ekleme
+      addOption();
+      addOption();
+      addVoter();
+      addVoter();
+    
+      // Form gönderme işlevselliği
+      document.getElementById('createElectionForm').addEventListener('submit', function(event) {
+        // Burada tarih doğrulaması yapıldı
+        // İlave doğrulamalar eklenebilir
+        if (!validateDates()) {
+          event.preventDefault();
+        }
+      });
+    
+      function validateDates() {
+        var startDate = new Date(startDateElement.value);
+        var endDate = new Date(endDateElement.value);
+    
+        if (startDate >= endDate) {
+          alert('Başlangıç tarihi bitiş tarihinden önce olmalıdır.');
+          return false;
+        }
+        return true;
+      }
+    });
+    </script>
+    
 
 {% endblock %}
