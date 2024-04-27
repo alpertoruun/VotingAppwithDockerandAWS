@@ -76,7 +76,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
   startDateElement.setAttribute('min', today);
   startDateElement.addEventListener('change', function() {
+    // Bitiş tarihi için en erken seçilebilecek zamanı başlangıç zamanından sonraya ayarla
     endDateElement.setAttribute('min', startDateElement.value);
+    // Eğer başlangıç tarihi zaten bitiş tarihinden sonra ise, bitiş tarihini sıfırla
+    if (startDateElement.value > endDateElement.value) {
+      endDateElement.value = startDateElement.value;
+    }
   });
 
   // Seçenek ve seçmen ekleme fonksiyonları
