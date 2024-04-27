@@ -15,7 +15,7 @@ accounts_bp = Blueprint("accounts", __name__)
 @accounts_bp.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     if current_user.is_authenticated:
-        return redirect(url_for('core.home'))
+        return redirect(url_for('core.create_election'))
 
     user_id = verify_reset_token(token)
     if not user_id:
@@ -42,7 +42,7 @@ def reset_password(token):
 @accounts_bp.route('/reset_password_request', methods=['GET', 'POST'])
 def reset_password_request():
     if current_user.is_authenticated:
-        return redirect(url_for('core.home'))
+        return redirect(url_for('core.create_election'))
     form = RequestResetForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
@@ -61,7 +61,7 @@ def reset_password_request():
 def register():
     if current_user.is_authenticated:
         flash("You are already registered.", "info")
-        return redirect(url_for("core.home"))
+        return redirect(url_for("core.create_election"))
     form = RegisterForm(request.form)
     if form.validate_on_submit():
         user = User(email=form.email.data, password=form.password.data)
@@ -70,7 +70,7 @@ def register():
         send_email("Welcome to Our App!", user.email, "Thank you for signing up. We're glad to have you!")
         login_user(user)
         flash("You registered and are now logged in. Welcome!", "success")
-        return redirect(url_for("core.home"))
+        return redirect(url_for("core.create_election"))
 
     return render_template("accounts/register.html", form=form)
 
@@ -79,13 +79,13 @@ def register():
 def login():
     if current_user.is_authenticated:
         flash("You are already logged in.", "info")
-        return redirect(url_for("core.home"))
+        return redirect(url_for("core.create_election"))
     form = LoginForm(request.form)
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user and bcrypt.check_password_hash(user.password, request.form["password"]):
             login_user(user)
-            return redirect(url_for("core.home"))
+            return redirect(url_for("core.create_election"))
         else:
             flash("Invalid email and/or password.", "danger")
             return render_template("accounts/login.html", form=form)

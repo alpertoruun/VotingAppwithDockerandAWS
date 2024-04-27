@@ -5,7 +5,7 @@
   <div class="row">
     <div class="col">
       <h2 class="text-left">Oylama Oluştur</h2>
-      <form id="createElectionForm">
+      <form id="createElectionForm" action="{{ url_for('core.create_election') }}" method="post">
         <!-- Başlık -->
         <div class="mb-3">
           <label for="title" class="form-label">Başlık</label>
