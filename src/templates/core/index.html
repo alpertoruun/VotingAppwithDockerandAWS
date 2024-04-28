@@ -110,12 +110,22 @@ document.addEventListener('DOMContentLoaded', function() {
     var newVoterEntry = document.createElement('div');
     newVoterEntry.classList.add('input-group', 'mb-3');
     newVoterEntry.innerHTML = `
-      <input type="text" class="form-control" name="voterTc[]" placeholder="Tc kimlik No" pattern="\d{11}" title="TC Kimlik No 11 haneli olmalıdır." required>
+  <div class="input-group mb-3">
+    <div class="col-md-3">
+      <input type="text" class="form-control" name="voterTc[]" placeholder="Tc kimlik No" pattern="\\d{11}" title="TC Kimlik No 11 haneli olmalıdır." required>
+    </div>
+    <div class="col-md-3">
       <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
+    </div>
+    <div class="col-md-3">
       <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
+    </div>
+    <div class="col-md-3">
       <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>
-      <button class="btn btn-outline-secondary removeVoter" type="button">&minus;</button>
-    `;
+    </div>
+    <button class="btn btn-outline-secondary removeVoter" type="button">&minus;</button>
+  </div>
+`;
     votersContainer.appendChild(newVoterEntry);
   }
 
@@ -140,7 +150,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Form gönderme işlevselliği
   document.getElementById('createElectionForm').addEventListener('submit', function(event) {
-    // Tarih doğrulaması
     if (startDateElement.value && endDateElement.value && startDateElement.value >= endDateElement.value) {
       alert('Başlangıç tarihi bitiş tarihinden önce olmalıdır.');
       event.preventDefault();
