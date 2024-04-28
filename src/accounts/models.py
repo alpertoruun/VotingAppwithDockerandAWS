@@ -72,7 +72,6 @@ class VoteToken(db.Model):
     voter_id = db.Column(db.Integer, db.ForeignKey('voter.id'), nullable=False)
     election_id = db.Column(db.Integer, db.ForeignKey('election.id'), nullable=False)
     used = db.Column(db.Boolean, default=False, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
     voter = db.relationship('Voter', backref=db.backref('tokens', lazy=True))
     election = db.relationship('Election', backref=db.backref('tokens', lazy=True))
 

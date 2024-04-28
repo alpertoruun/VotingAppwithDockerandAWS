@@ -6,6 +6,7 @@ from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail
 from flask_wtf import CSRFProtect
+from cryptography.fernet import Fernet
 
 
 app = Flask(__name__)
@@ -17,6 +18,9 @@ login_manager.init_app(app)
 bcrypt = Bcrypt(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+
+fernet_key=Fernet.generate_key()
+app.extensions['fernet']=Fernet(fernet_key)
 
 csrf = CSRFProtect(app)
 
