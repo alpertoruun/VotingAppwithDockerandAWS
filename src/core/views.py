@@ -10,16 +10,39 @@ from src.utils.encrypt_election_id import encrypt_id, decrypt_id
 
 core_bp = Blueprint("core", __name__)
 
+
+@core_bp.route('/election/<encrypted_election_id>/voters')
+@login_required
+def election_voters(encrypted_election_id):
+    election_id = decrypt_id(encrypted_election_id)
+    if not election_id:
+        abort(404, description="Geçersiz seçim ID'si")
+
+    election = Election.query.get(election_id)
+    if not election:
+        abort(404, description="Seçim bulunamadı")
+
+    page = request.args.get('page', 1, type=int)
+    per_page = 15
+    vote_tokens_query = VoteToken.query.filter_by(election_id=election_id)
+    vote_tokens_paginated = vote_tokens_query.paginate(page=page, per_page=per_page, error_out=False)
+    voter_ids = [token.voter_id for token in vote_tokens_paginated.items]
+    voters = Voter.query.filter(Voter.id.in_(voter_ids)).all()
+
+    return render_template('core/election_voters.html', election=election, voters=voters, pagination=vote_tokens_paginated)
+
+
 @core_bp.route('/my_elections')
 @login_required
 def my_elections():
     page = request.args.get('page', 1, type=int)
     per_page = 15
     elections_query = Election.query.filter_by(creator_id=current_user.id)
-    elections = elections_query.paginate(page=page, per_page=per_page, error_out=True)
-    for election in elections.items:
-        election.encrypted_id = encrypt_id(election.id)
-    return render_template('core/my_elections.html', elections=elections)
+    elections = elections_query.paginate(page=page, per_page=per_page, error_out=False)
+    encrypted_elections = [(encrypt_id(election.id), election) for election in elections.items]
+    return render_template('core/my_elections.html', elections=encrypted_elections, pagination=elections)
+
+
 
 
 @core_bp.route('/election/<encrypted_election_id>')

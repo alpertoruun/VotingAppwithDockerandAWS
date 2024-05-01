@@ -1,35 +1,48 @@
 {% extends "_base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-    <h2>Benim Seçimlerim</h2>
+<div class="container">
+    <h1>Benim Oylamalarım</h1>
     <table class="table">
         <thead>
             <tr>
                 <th>Oylama İsmi</th>
                 <th>Açıklama</th>
+                <th>Seçmenler</th>
                 <th>Sonuçlar</th>
             </tr>
         </thead>
         <tbody>
-            {% for election in elections.items %}
+            {% for encrypted_id, election in elections %}
             <tr>
                 <td>{{ election.title }}</td>
                 <td>{{ election.description }}</td>
-                <td><a href="{{ url_for('core.election_results', encrypted_election_id=election.encrypted_id) }}">Sonuçlar</a></td>
+                <td>
+                    <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_id) }}">Seçmenleri Gör</a>
+                </td>
+                <td>
+                    <a href="{{ url_for('core.election_results', encrypted_election_id=encrypted_id) }}">Sonuçları Gör</a>
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
-
-    <!-- Sayfalama Linkleri -->
     <nav>
         <ul class="pagination">
-            {% if elections.has_prev %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('core.my_elections', page=elections.prev_num) }}">Önceki</a></li>
+            {% if pagination.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('core.my_elections', page=pagination.prev_num) }}">Previous</a>
+            </li>
             {% endif %}
-            {% if elections.has_next %}
-            <li class="page-item"><a class="page-link" href="{{ url_for('core.my_elections', page=elections.next_num) }}">Sonraki</a></li>
+            {% for page_num in pagination.iter_pages() %}
+            <li class="page-item {{ 'active' if page_num == pagination.page else '' }}">
+                <a class="page-link" href="{{ url_for('core.my_elections', page=page_num) }}">{{ page_num }}</a>
+            </li>
+            {% endfor %}
+            {% if pagination.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('core.my_elections', page=pagination.next_num) }}">Next</a>
+            </li>
             {% endif %}
         </ul>
     </nav>
