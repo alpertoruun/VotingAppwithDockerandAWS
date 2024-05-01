@@ -11,6 +11,7 @@ from src.utils.encrypt_election_id import encrypt_id, decrypt_id
 core_bp = Blueprint("core", __name__)
 
 
+
 @core_bp.route('/election/<encrypted_election_id>/voters')
 @login_required
 def election_voters(encrypted_election_id):
@@ -22,6 +23,10 @@ def election_voters(encrypted_election_id):
     if not election:
         abort(404, description="Seçim bulunamadı")
 
+    if current_user.id != election.creator_id:
+        flash('Bu sayfayı görüntüleme yetkiniz yok.', 'warning')
+        return redirect(url_for('core.index'))
+    
     page = request.args.get('page', 1, type=int)
     per_page = 15
     vote_tokens_query = VoteToken.query.filter_by(election_id=election_id)
@@ -164,6 +169,6 @@ def create_election():
             send_vote_link(voter, token, election)
 
         flash('Oylama başarıyla oluşturuldu!', "success")
-        return redirect(url_for("core.create_election"))
+        return redirect(url_for("core.my_elections"))
         
     return render_template("core/index.html")
