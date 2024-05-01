@@ -1,0 +1,37 @@
+{% extends "_base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Benim Seçimlerim</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Election İsmi</th>
+                <th>Açıklama</th>
+                <th>Sonuçlar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for election in elections.items %}
+            <tr>
+                <td>{{ election.title }}</td>
+                <td>{{ election.description }}</td>
+                <td><a href="{{ url_for('core.election_results', encrypted_election_id=election.encrypted_id) }}">Sonuçlar</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Sayfalama Linkleri -->
+    <nav>
+        <ul class="pagination">
+            {% if elections.has_prev %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('core.my_elections', page=elections.prev_num) }}">Önceki</a></li>
+            {% endif %}
+            {% if elections.has_next %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('core.my_elections', page=elections.next_num) }}">Sonraki</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+</div>
+{% endblock %}

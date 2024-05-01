@@ -9,6 +9,18 @@ from src.utils.encrypt_election_id import encrypt_id, decrypt_id
 
 core_bp = Blueprint("core", __name__)
 
+@core_bp.route('/my_elections')
+@login_required
+def my_elections():
+    page = request.args.get('page', 1, type=int)
+    per_page = 15
+    elections_query = Election.query.filter_by(creator_id=current_user.id)
+    elections = elections_query.paginate(page=page, per_page=per_page, error_out=True)
+    for election in elections.items:
+        election.encrypted_id = encrypt_id(election.id)
+    return render_template('core/my_elections.html', elections=elections)
+
+
 @core_bp.route('/election/<encrypted_election_id>')
 def election_results(encrypted_election_id):
     election_id = decrypt_id(encrypted_election_id)
