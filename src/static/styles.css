@@ -1,25 +1,14 @@
-.error {
-  color: red;
-  margin-bottom: 5px;
-  text-align: center;
-}
-
-a {
-  text-decoration: none;
-}
-
 .input-group {
   display: flex;
-  flex-wrap: nowrap; /* Satır kaymasını önler */
+  align-items: center; /* İçerikleri dikey olarak hizalar */
+  justify-content: space-between; /* İçerik arasında boşluk bırakır */
 }
 
-.input-group > div.ms-auto {
-  margin-left: auto;
-  display: flex;
-  align-items: center; /* Butonu dikey olarak hizalar */
+.input-group input {
+  flex: 1; /* Input alanları esnek büyüyebilir */
+  margin-right: 8px; /* Sağa boşluk bırakır */
 }
 
-.addVoter, .removeVoter {
+.input-group button {
   white-space: nowrap; /* Buton metinlerinin alt satıra geçmesini önler */
 }
-

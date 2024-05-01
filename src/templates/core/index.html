@@ -45,25 +45,28 @@
         </div>
         <!-- Seçmen Bilgileri -->
         <h2 class="text-left">Seçmen Bilgileri</h2>
-        <div id="votersContainer">
-            <!-- İlk seçmen için giriş -->
+        <div class="container">
+          <div id="votersContainer">
+            <!-- Mevcut seçmenler -->
             <div class="input-group mb-3">
-                <input type="text" class="form-control" name="voterTc[]" placeholder="Tc kimlik No" pattern="\d{11}" title="TC Kimlik No 11 haneli olmalıdır." required>
-                <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
-                <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
-                <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>
+              <input type="text" class="form-control" name="voterTc[]" placeholder="Tc kimlik No" pattern="\d{11}" title="TC Kimlik No 11 haneli olmalıdır." required>
+              <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
+              <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
+              <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>
+              <button class="btn btn-outline-secondary removeVoter" type="button">&minus;</button>
             </div>
-            <!-- İkinci seçmen için giriş -->
             <div class="input-group mb-3">
-                <input type="text" class="form-control" name="voterTc[]" placeholder="Tc kimlik No" pattern="\d{11}" title="TC Kimlik No 11 haneli olmalıdır." required>
-                <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
-                <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
-                <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>
+              <input type="text" class="form-control" name="voterTc[]" placeholder="Tc kimlik No" pattern="\d{11}" title="TC Kimlik No 11 haneli olmalıdır." required>
+              <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
+              <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
+              <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>
+              <button class="btn btn-outline-secondary removeVoter" type="button">&minus;</button>
             </div>
+            <!-- Bu kısımda daha fazla input-group olabilir -->
           </div>
-          <div class="mb-3">
-            <button class="btn btn-outline-secondary addVoter" type="button">+</button>
-          </div>
+          <!-- + tuşu her zaman container'ın altında ve sabit -->
+          <button class="btn btn-outline-secondary addVoter" type="button">+</button>
+        </div>
           
           <!-- Oylama Oluştur Butonu -->
           <div class="mb-3">
@@ -109,30 +112,19 @@ document.addEventListener('DOMContentLoaded', function() {
     optionsContainer.appendChild(newOptionEntry);
 }
 
-  function addVoter() {
+function addVoter() {
     var votersContainer = document.getElementById('votersContainer');
     var newVoterEntry = document.createElement('div');
     newVoterEntry.classList.add('input-group', 'mb-3');
     newVoterEntry.innerHTML = `
-  <div class="input-group mb-3">
-    <div class="col-md-3">
-      <input type="text" class="form-control" name="voterTc[]" placeholder="Tc kimlik No" pattern="\\d{11}" title="TC Kimlik No 11 haneli olmalıdır." required>
-    </div>
-    <div class="col-md-3">
-      <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
-    </div>
-    <div class="col-md-3">
-      <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
-    </div>
-    <div class="col-md-3">
-      <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>
-    </div>
-    <button class="btn btn-outline-secondary removeVoter" type="button">&minus;</button>
-  </div>
-`;
+        <input type="text" class="form-control" name="voterTc[]" placeholder="Tc kimlik No" pattern="\d{11}" title="TC Kimlik No 11 haneli olmalıdır." required>
+        <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
+        <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
+        <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>
+        <button class="btn btn-outline-secondary removeVoter" type="button">&minus;</button>
+    `;
     votersContainer.appendChild(newVoterEntry);
-  }
-
+}
   // Seçenek ve seçmen kaldırma işlevleri
   document.getElementById('optionsContainer').addEventListener('click', function(event) {
     if (event.target.classList.contains('removeOption')) {
