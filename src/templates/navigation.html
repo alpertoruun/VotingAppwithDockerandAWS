@@ -3,7 +3,7 @@
   <div class="container">
     <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-start">
       <ul class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
-        <li><a href="{{ url_for('core.create_election') }}" class="nav-link px-2 text-secondary">Home</a></li>
+        <li><a href="{{ url_for('core.create_election') }}" class="nav-link px-2 text-secondary">Oylama Oluştur</a></li>
         {% if current_user.is_authenticated %}
         <li><a href="{{ url_for('core.my_elections') }}" class="nav-link px-2 text-secondary">Oylamalarım</a></li>
         {% endif %}

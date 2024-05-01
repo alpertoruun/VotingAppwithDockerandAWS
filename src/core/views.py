@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from src.accounts.models import db, Election, Voter, Option, Votes, VoteToken
 from src.utils.email_utils import send_vote_link
+from src.utils.email_validator import validate_email_address
 from src.utils.vote_token_utils import create_vote_token_entry
 from src.utils.encrypt_election_id import encrypt_id, decrypt_id
 
@@ -87,9 +88,20 @@ def vote(token):
 @core_bp.route("/create_election", methods=['GET', 'POST'])
 @login_required
 def create_election():
-    if not current_user.is_authenticated:
-        flash('Giriş yapmalısınız!')
-        return redirect(url_for('login'))
+    voter_emails = request.form.getlist('voterEmail[]')
+    valid_emails = []
+    error = False
+    for email in voter_emails:
+        result = validate_email_address(email)
+        if '@' in result:
+            valid_emails.append(result)
+        else:
+            flash(f'Geçersiz e-posta adresi: {result}', 'warning')
+            error = True
+    if error:
+        return redirect(url_for('core.create_election'))
+
+
     if request.method == 'POST':
         title = request.form.get('title')
         description = request.form.get('description')
