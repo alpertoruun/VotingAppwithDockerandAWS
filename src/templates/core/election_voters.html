@@ -13,7 +13,7 @@
             </tr>
         </thead>
         <tbody>
-            {% for voter in voters %}
+            {% for token, voter in voter_info %}
             <tr>
                 <td>{{ voter.tc }}</td>
                 <td>{{ voter.name }}</td>
@@ -26,19 +26,13 @@
     <nav aria-label="Page navigation">
         <ul class="pagination">
             {% if pagination.has_prev %}
-            <li class="page-item">
-                <a class="page-link" href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, page=pagination.prev_num) }}">Previous</a>
-            </li>
+            <li class="page-item"><a class="page-link" href="?page={{ pagination.prev_num }}">Previous</a></li>
             {% endif %}
-            {% for page_num in pagination.iter_pages() %}
-            <li class="page-item {{ 'active' if page_num == pagination.page else '' }}">
-                <a class="page-link" href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, page=page_num) }}">{{ page_num }}</a>
-            </li>
+            {% for page in pagination.iter_pages() %}
+            <li class="page-item {{ 'active' if page == pagination.page else '' }}"><a class="page-link" href="?page={{ page }}">{{ page }}</a></li>
             {% endfor %}
             {% if pagination.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, page=pagination.next_num) }}">Next</a>
-            </li>
+            <li class="page-item"><a class="page-link" href="?page={{ pagination.next_num }}">Next</a></li>
             {% endif %}
         </ul>
     </nav>

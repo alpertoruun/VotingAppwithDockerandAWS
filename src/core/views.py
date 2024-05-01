@@ -26,16 +26,15 @@ def election_voters(encrypted_election_id):
     if current_user.id != election.creator_id:
         flash('Bu sayfayı görüntüleme yetkiniz yok.', 'warning')
         return redirect(url_for('core.index'))
-    
+
     page = request.args.get('page', 1, type=int)
     per_page = 15
-    vote_tokens_query = VoteToken.query.filter_by(election_id=election_id)
+    vote_tokens_query = VoteToken.query.filter_by(election_id=election_id).join(Voter, VoteToken.voter_id == Voter.id)
     vote_tokens_paginated = vote_tokens_query.paginate(page=page, per_page=per_page, error_out=False)
-    voter_ids = [token.voter_id for token in vote_tokens_paginated.items]
-    voters = Voter.query.filter(Voter.id.in_(voter_ids)).all()
+    voter_info = [(token, Voter.query.get(token.voter_id)) for token in vote_tokens_paginated.items]
+    print(voter_info)
 
-    return render_template('core/election_voters.html', election=election, voters=voters, pagination=vote_tokens_paginated)
-
+    return render_template('core/election_voters.html', election=election, voter_info=voter_info, pagination=vote_tokens_paginated)
 
 @core_bp.route('/my_elections')
 @login_required
