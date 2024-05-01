@@ -79,6 +79,9 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+  updateVoterButtons();
+  updateOptionButtons();
+
   // Tarih işlevselliği
   var startDateElement = document.getElementById('startDate');
   var endDateElement = document.getElementById('endDate');
@@ -98,32 +101,46 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // Seçenek ve seçmen ekleme fonksiyonları
   function addOption() {
-    var optionsContainer = document.getElementById('optionsContainer');
-    var newOptionEntry = document.createElement('div');
-    newOptionEntry.classList.add('input-group', 'mb-3');
-    newOptionEntry.innerHTML = `
-      <div class="col-md-12">
-        <input type="text" class="form-control" name="options" required>
-      </div>
-      <div class="col-md-0 d-flex justify-content-end">
-        <button class="btn btn-outline-secondary removeOption" type="button">&minus;</button>
-      </div>
-    `;
-    optionsContainer.appendChild(newOptionEntry);
+  var optionsContainer = document.getElementById('optionsContainer');
+  var newOptionEntry = document.createElement('div');
+  newOptionEntry.classList.add('input-group', 'mb-3');
+  newOptionEntry.innerHTML = `
+    <input type="text" class="form-control" name="options" required>
+    <button class="btn btn-outline-secondary removeOption" type="button">−</button>
+  `;
+  optionsContainer.appendChild(newOptionEntry);
+  updateOptionButtons(); // Butonları güncelle ekleme sonrası
+}
+function updateOptionButtons() {
+  var removeButtons = document.querySelectorAll('.removeOption');
+  if (removeButtons.length >= 2) {
+    removeButtons.forEach((button, index) => {
+      button.style.visibility = (index < 2) ? 'hidden' : 'visible'; // İlk iki butonu gizle
+    });
+  }
 }
 
 function addVoter() {
-    var votersContainer = document.getElementById('votersContainer');
-    var newVoterEntry = document.createElement('div');
-    newVoterEntry.classList.add('input-group', 'mb-3');
-    newVoterEntry.innerHTML = `
-        <input type="text" class="form-control" name="voterTc[]" placeholder="Tc kimlik No" pattern="\d{11}" title="TC Kimlik No 11 haneli olmalıdır." required>
-        <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
-        <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
-        <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>
-        <button class="btn btn-outline-secondary removeVoter" type="button">&minus;</button>
-    `;
-    votersContainer.appendChild(newVoterEntry);
+  var votersContainer = document.getElementById('votersContainer');
+  var newVoterEntry = document.createElement('div');
+  newVoterEntry.classList.add('input-group', 'mb-3');
+  newVoterEntry.innerHTML = `
+    <input type="text" class="form-control" name="voterTc[]" placeholder="Tc kimlik No" required>
+    <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
+    <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
+    <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>
+    <button class="btn btn-outline-secondary removeVoter" type="button">−</button>
+  `;
+  votersContainer.appendChild(newVoterEntry);
+  updateVoterButtons(); // Butonları güncelle ekleme sonrası
+}
+function updateVoterButtons() {
+  var removeButtons = document.querySelectorAll('.removeVoter');
+  if (removeButtons.length >= 2) {
+    removeButtons.forEach((button, index) => {
+      button.style.visibility = (index < 2) ? 'hidden' : 'visible'; // İlk iki butonu gizle
+    });
+  }
 }
   // Seçenek ve seçmen kaldırma işlevleri
   document.getElementById('optionsContainer').addEventListener('click', function(event) {
@@ -142,8 +159,10 @@ function addVoter() {
 
   // '+' butonlarının olay dinleyicileri
   document.querySelector('.addOption').addEventListener('click', addOption);
-  document.querySelector('.addVoter').addEventListener('click', addVoter);
-
+  document.querySelector('.addVoter').addEventListener('click', function() {
+    addVoter();
+    updateVoterButtons(); // Butonları güncelle her ekleme sonrası
+  });
   // Form gönderme işlevselliği
   document.getElementById('createElectionForm').addEventListener('submit', function(event) {
     if (startDateElement.value && endDateElement.value && startDateElement.value >= endDateElement.value) {
