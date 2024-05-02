@@ -16,6 +16,7 @@ class Config(object):
     WTF_CSRF_ENABLED = True
     DEBUG_TB_ENABLED = False
     DEBUG_TB_INTERCEPT_REDIRECTS = False
+    FERNET_KEY = config("FERNET_KEY", default="guess-me")
 
 
 class DevelopmentConfig(Config):

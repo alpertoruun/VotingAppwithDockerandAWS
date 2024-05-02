@@ -19,7 +19,7 @@ bcrypt = Bcrypt(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
-fernet_key=Fernet.generate_key()
+fernet_key = config('FERNET_KEY')
 app.extensions['fernet']=Fernet(fernet_key)
 
 csrf = CSRFProtect(app)
@@ -43,9 +43,7 @@ def load_user(user_id):
     return User.query.filter(User.id == int(user_id)).first()
 
 
-########################
-#### error handlers ####
-########################
+#### error handlers 
 
 
 @app.errorhandler(401)
