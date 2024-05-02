@@ -1,5 +1,7 @@
 from flask_mail import Message
 from flask import current_app as app, url_for
+from threading import Thread
+
 
 def send_email(subject, recipient, body):
     mail = app.extensions.get('mail')
@@ -26,3 +28,9 @@ def send_vote_link(user, token, election):
     link = url_for('core.vote', token=token, _external=True)
     msg.body = f'Sayın {user.name.capitalize()} {user.surname.capitalize()},\n{election.title} seçimi için {election.start_date.strftime("%d-%m-%Y %H:%M")} tarihinden {election.end_date.strftime("%d-%m-%Y %H:%M")} tarihine kadar oy kullanabilirsiniz.\nOy kullanmak için aşağıdaki linke tıklayınız:\n{link}'
     mail.send(msg)
+    Thread(target=send_async_email, args=(app, msg)).start()
+
+
+def send_async_email(app, msg):
+    with app.app_context():
+        mail.send(msg)
