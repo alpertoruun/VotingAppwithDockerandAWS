@@ -1,4 +1,5 @@
 from datetime import datetime
+from collections import defaultdict
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 from src.accounts.models import db, Election, Voter, Option, Votes, VoteToken
@@ -28,7 +29,7 @@ def election_voters(encrypted_election_id):
         return redirect(url_for('core.index'))
 
     page = request.args.get('page', 1, type=int)
-    per_page = 15
+    per_page = 18
     vote_tokens_query = VoteToken.query.filter_by(election_id=election_id).join(Voter, VoteToken.voter_id == Voter.id)
     vote_tokens_paginated = vote_tokens_query.paginate(page=page, per_page=per_page, error_out=False)
     voter_info = [(token, Voter.query.get(token.voter_id)) for token in vote_tokens_paginated.items]
@@ -40,7 +41,7 @@ def election_voters(encrypted_election_id):
 @login_required
 def my_elections():
     page = request.args.get('page', 1, type=int)
-    per_page = 15
+    per_page = 18
     elections_query = Election.query.filter_by(creator_id=current_user.id)
     elections = elections_query.paginate(page=page, per_page=per_page, error_out=False)
     encrypted_elections = [(encrypt_id(election.id), election) for election in elections.items]
@@ -115,19 +116,6 @@ def vote(token):
 @core_bp.route("/create_election", methods=['GET', 'POST'])
 @login_required
 def create_election():
-    voter_emails = request.form.getlist('voterEmail[]')
-    valid_emails = []
-    error = False
-    for email in voter_emails:
-        result = validate_email_address(email)
-        if '@' in result:
-            valid_emails.append(result)
-        else:
-            flash(f'Geçersiz e-posta adresi: {result}', 'warning')
-            error = True
-    if error:
-        return redirect(url_for('core.create_election'))
-
 
     if request.method == 'POST':
         title = request.form.get('title')
@@ -139,6 +127,37 @@ def create_election():
         voter_names = request.form.getlist('voterName[]')
         voter_surnames = request.form.getlist('voterSurname[]')
         voter_emails = request.form.getlist('voterEmail[]')
+        voter_data = zip(voter_tcs, voter_emails)
+        email_to_tc = defaultdict(set)
+        error = False
+        for tc, email in voter_data:
+            try:    
+                valid_email = validate_email_address(email)
+                if email in email_to_tc and tc not in email_to_tc[email]:
+                    flash(f'E-posta adresi {email} farklı TC kimlik numaralarıyla kullanılamaz.', 'warning')
+                    error = True
+                    break
+                email_to_tc[email].add(tc)
+            except EmailNotValidError as e:
+                flash(f'Geçersiz e-posta adresi: {email}. Hata: {str(e)}', 'warning')
+                error = True
+                break
+        if error:
+            return redirect(url_for('core.create_election'))
+        voter_expanded_data = zip(voter_tcs, voter_names, voter_surnames, voter_emails)
+        for tc, name, surname, email in voter_expanded_data:
+            for other_tc, other_name, other_surname, other_email in voter_expanded_data:
+                if tc == other_tc and ((name, surname) != (other_name, other_surname) or email != other_email):
+                    flash(f'Aynı TC kimlik numarasına sahip ({tc}) seçmenlerin isim, soyisim veya e-posta adresleri farklı olamaz.', 'warning')
+                    error = True
+                    break
+            if error:
+                break
+        if error:
+            return redirect(url_for('core.create_election'))
+
+
+
         election = Election(
             title=title,
             description=description,
