@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from src.accounts.models import db, Election, Voter, Option, Votes, VoteToken
 from src.utils.email_utils import send_vote_link
-from src.utils.email_validator import validate_email_address
+from src.utils.email_validator import validate_email_address, EmailNotValidError
 from src.utils.vote_token_utils import create_vote_token_entry
 from src.utils.encrypt_election_id import encrypt_id, decrypt_id
 
