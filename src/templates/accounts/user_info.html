@@ -1,0 +1,74 @@
+{% extends "_base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm mb-4"> <!-- Kart yapısı ve gölge efekti eklendi -->
+                <div class="card-header">
+                    <h4>Kullanıcı Bilgileri</h4>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>Email:</strong> {{ user.email }}</p> <!-- Mail bilgisini güçlendirildi -->
+                </div>
+            </div>
+            
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">E-posta Değiştir</h5>
+                    <form method="POST">
+                        {{ email_form.hidden_tag() }}
+                        <div class="mb-3">
+                            {{ email_form.email.label(class="form-label") }}
+                            {{ email_form.email(class="form-control", size=32) }}
+                        </div>
+                        <button type="submit" name="email" class="btn btn-primary">Gönder</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Şifre Değiştir</h5>
+                    <form method="POST">
+                        {{ password_form.hidden_tag() }}
+                        <div class="mb-3">
+                            {{ password_form.current_password.label(class="form-label") }}
+                            {{ password_form.current_password(class="form-control") }}
+                            {% if password_form.current_password.errors %}
+                                <div class="alert alert-danger">
+                                    {% for error in password_form.current_password.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            {{ password_form.new_password.label(class="form-label") }}
+                            {{ password_form.new_password(class="form-control") }}
+                            {% if password_form.new_password.errors %}
+                                <div class="alert alert-danger">
+                                    {% for error in password_form.new_password.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            {{ password_form.confirm_password.label(class="form-label") }}
+                            {{ password_form.confirm_password(class="form-control") }}
+                            {% if password_form.confirm_password.errors %}
+                                <div class="alert alert-danger">
+                                    {% for error in password_form.confirm_password.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <button type="submit" name="password" class="btn btn-success">Change Password</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

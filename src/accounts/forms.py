@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import EmailField, PasswordField
+from wtforms import EmailField, PasswordField, SubmitField, validators
 from wtforms.validators import DataRequired, Email, EqualTo, Length
 
 from src.accounts.models import User
@@ -53,3 +53,23 @@ class PasswordChangeForm(FlaskForm):
             EqualTo("password", message="Passwords must match.")
         ],
     )
+
+
+class EmailChangeForm(FlaskForm):
+    email = EmailField('New Email', validators=[DataRequired(), Email()])
+
+
+class PasswordChangeForm(FlaskForm):
+    current_password = PasswordField('Current Password', validators=[validators.DataRequired()])
+    new_password = PasswordField('New Password', validators=[
+        validators.DataRequired(),
+        validators.Length(min=6, message='Your password must be at least 6 characters long.')
+    ])
+    confirm_password = PasswordField(
+        "Repeat Password",
+        validators=[
+            validators.DataRequired(),
+            validators.EqualTo('new_password', message="Passwords must match.")
+        ]
+    )
+    submit = SubmitField('Change Password')

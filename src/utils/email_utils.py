@@ -34,3 +34,12 @@ def send_vote_link(user, token, election):
 def send_async_email(app, msg):
     with app.app_context():
         mail.send(msg)
+
+
+def send_update_email(new_mail, token):
+    mail = app.extensions.get('mail')
+    msg = Message('Update Your Email Address', sender=app.config['MAIL_USERNAME'], recipients=[new_mail])
+    update_url = url_for('accounts.update_mail', token=token, _external=True)
+    msg.body = f"To update your email address, please visit the following link:\n{update_url}\n\nIf you did not request this email change, please ignore this email and no changes will be made."
+
+    mail.send(msg)
