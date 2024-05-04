@@ -111,6 +111,11 @@ def vote(token):
 
     return render_template('core/vote.html', election=election, options=options)
 
+@core_bp.route('/')
+@login_required
+def base():
+    return redirect(url_for('core.create_election'))
+
 
 
 @core_bp.route("/create_election", methods=['GET', 'POST'])
