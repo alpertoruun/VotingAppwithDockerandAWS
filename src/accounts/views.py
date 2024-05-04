@@ -11,7 +11,7 @@ from src.utils.update_email_token_utils import create_update_email_entry, verify
 from src import bcrypt, db
 from src.accounts.models import User, PasswordResetToken, UpdateEmailToken
 
-from .forms import LoginForm, RegisterForm, RequestResetForm, PasswordChangeForm, EmailChangeForm, PasswordChangeForm
+from .forms import LoginForm, RegisterForm, RequestResetForm, PasswordChangeForm_, EmailChangeForm, PasswordChangeForm
 
 accounts_bp = Blueprint("accounts", __name__)
 
@@ -83,7 +83,7 @@ def reset_password(token):
         flash('This is an invalid or expired token', 'warning')
         return redirect(url_for('accounts.reset_password_request'))
 
-    form = PasswordChangeForm()
+    form = PasswordChangeForm_()
     if form.validate_on_submit():
         user = User.query.get(user_id)
         if user:
@@ -128,9 +128,8 @@ def register():
         db.session.add(user)
         db.session.commit()
         send_email("Welcome to Our App!", user.email, "Thank you for signing up. We're glad to have you!")
-        login_user(user)
-        flash("You registered and are now logged in. Welcome!", "success")
-        return redirect(url_for("core.create_election"))
+        flash("You registered.Welcome!", "success")
+        return redirect(url_for("accounts.login"))
 
     return render_template("accounts/register.html", form=form)
 

@@ -5,4 +5,4 @@ def validate_email_address(email):
         valid = validate_email(email)
         return valid.email
     except EmailNotValidError as e:
-        return str(e)
+        return None  

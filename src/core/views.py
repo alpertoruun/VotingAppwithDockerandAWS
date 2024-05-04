@@ -136,17 +136,17 @@ def create_election():
         email_to_tc = defaultdict(set)
         error = False
         for tc, email in voter_data:
-            try:    
-                valid_email = validate_email_address(email)
-                if email in email_to_tc and tc not in email_to_tc[email]:
-                    flash(f'E-posta adresi {email} farklı TC kimlik numaralarıyla kullanılamaz.', 'warning')
-                    error = True
-                    break
-                email_to_tc[email].add(tc)
-            except EmailNotValidError as e:
-                flash(f'Geçersiz e-posta adresi: {email}. Hata: {str(e)}', 'warning')
+            valid_email = validate_email_address(email)
+            if valid_email is None:  
+                flash(f'Geçersiz e-posta adresi: {email}', 'warning')
                 error = True
                 break
+            if email in email_to_tc and tc not in email_to_tc[email]:
+                flash(f'E-posta adresi {email} farklı TC kimlik numaralarıyla kullanılamaz.', 'warning')
+                error = True
+                break
+            email_to_tc[email].add(tc)
+
         if error:
             return redirect(url_for('core.create_election'))
         voter_expanded_data = zip(voter_tcs, voter_names, voter_surnames, voter_emails)
@@ -180,7 +180,7 @@ def create_election():
 
         for tc, name, surname, email in zip(voter_tcs, voter_names, voter_surnames, voter_emails):
             voter = Voter.query.filter_by(tc=tc).first()
-            if voter:
+            if voter:   
                 voter.name = name
                 voter.surname = surname
                 voter.email = email

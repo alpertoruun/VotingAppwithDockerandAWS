@@ -1,19 +1,29 @@
-<!-- templates/vote.html -->
 {% extends "_base.html" %}
 
 {% block content %}
-<h1>{{ election.title }}</h1>
-<p>{{ election.description }}</p>
-
-<form method="post">
-    <div class="form-group">
-        <label for="option">Seçenekler:</label>
-        <select class="form-control" id="option" name="option">
-            {% for option in options %}
-            <option value="{{ option.id }}">{{ option.description }}</option>
-            {% endfor %}
-        </select>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-lg"> <!-- Gölge efekti eklendi -->
+                <div class="card-header bg-primary text-white"> <!-- Başlık için arka plan ve metin rengi eklendi -->
+                    <h2 class="card-title">{{ election.title }}</h2>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ election.description }}</p>
+                    <form method="post">
+                        <div class="mb-4">
+                            <label for="option" class="form-label"><strong>Seçenekler:</strong></label> <!-- Label'ı kalın yaparak vurgulandı -->
+                            <select class="form-control form-select-lg mb-3" id="option" name="option"> <!-- Form büyüklüğü artırıldı -->
+                                {% for option in options %}
+                                <option value="{{ option.id }}">{{ option.description }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-success btn-lg">Oy Ver</button> <!-- Buton boyutu ve rengi güçlendirildi -->
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
-    <button type="submit" class="btn btn-primary">Oy Ver</button>
-</form>
+</div>
 {% endblock %}
