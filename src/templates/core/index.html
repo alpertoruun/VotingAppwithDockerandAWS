@@ -4,157 +4,164 @@
 <div class="container mt-4">
   <div class="row">
     <div class="col">
-      <h2 class="text-left">Oylama Bilgileri</h2>
-      <form id="createElectionForm" action="{{ url_for('core.create_election') }}" method="post">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <!-- Başlık -->
-        <div class="mb-3">
-          <label for="title" class="form-label">Oylama Başlığı</label>
-          <input type="text" class="form-control" id="title" name="title" required>
-        </div>
-        <!-- Açıklama -->
-        <div class="mb-3">
-          <label for="description" class="form-label">Açıklama</label>
-          <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
-        </div>
-        <!-- Başlangıç ve Bitiş Tarihleri -->
-        <div class="mb-3 row">
-          <div class="col">
-            <label for="startDate" class="form-label">Başlangıç Tarihi</label>
-            <input type="datetime-local" class="form-control" id="startDate" name="startDate" required>
-          </div>
-          <div class="col">
-            <label for="endDate" class="form-label">Bitiş Tarihi</label>
-            <input type="datetime-local" class="form-control" id="endDate" name="endDate" required>
-          </div>
-        </div>
-        <!-- Seçenekler -->
-        <div class="mb-3">
-          <label class="form-label">Seçenekler</label>
-          <div id="optionsContainer">
+      <!-- Formu kapsayan ana kart -->
+      <div class="card shadow">
+        <div class="card-body">
+          <h2 class="text-center mb-4">Oylama Bilgileri</h2> <!-- Başlık kart içerisine alındı -->
+          <form id="createElectionForm" action="{{ url_for('core.create_election') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-          </div>
-          <button class="btn btn-outline-secondary addOption" type="button">+</button>
+            <!-- Başlık -->
+            <div class="mb-3">
+              <label for="title" class="form-label">Oylama Başlığı</label>
+              <input type="text" class="form-control" id="title" name="title" required>
+            </div>
+
+            <!-- Açıklama -->
+            <div class="mb-3">
+              <label for="description" class="form-label">Açıklama</label>
+              <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+            </div>
+
+            <!-- Başlangıç ve Bitiş Tarihleri -->
+            <div class="mb-3 row">
+              <div class="col">
+                <label for="startDate" class="form-label">Başlangıç Tarihi</label>
+                <input type="datetime-local" class="form-control" id="startDate" name="startDate" required>
+              </div>
+              <div class="col">
+                <label for="endDate" class="form-label">Bitiş Tarihi</label>
+                <input type="datetime-local" class="form-control" id="endDate" name="endDate" required>
+              </div>
+            </div>
+
+            <!-- Seçenekler -->
+            <div class="mb-3">
+              <label class="form-label">Seçenekler</label>
+              <div id="optionsContainer">
+                <!-- Seçenekler buraya dinamik olarak eklenecek -->
+              </div>
+              <button class="btn btn-outline-secondary addOption" type="button">+</button>
+            </div>
+
+            <!-- Seçmen Bilgileri -->
+            <h3 class="text-left">Seçmen Bilgileri</h3>
+            <div class="container" id="votersContainer">
+              <!-- Seçmen bilgileri buraya dinamik olarak eklenecek -->
+            </div>
+            <button class="btn btn-outline-secondary addVoter" type="button">+</button>
+          </form>
         </div>
-        <!-- Seçmen Bilgileri -->
-        <h2 class="text-left">Seçmen Bilgileri</h2>
-        <div class="container">
-          <div id="votersContainer">
-           
-          </div>
-          <!-- + tuşu her zaman container'ın altında ve sabit -->
-          <button class="btn btn-outline-secondary addVoter" type="button">+</button>
+
+        <!-- Oylama Oluştur Butonu form dışına ve kart altına taşındı -->
+        <div class="card-footer text-right">
+          <button type="submit" form="createElectionForm" class="btn btn-primary">Oylama Oluştur</button>
         </div>
-          
-          <!-- Oylama Oluştur Butonu -->
-          <div class="mb-3">
-            <button type="submit" class="btn btn-primary mt-3">Oylama Oluştur</button>
-          </div>
-      </form>
+      </div>
     </div>
   </div>
 </div>
-
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  addOption();
-  addOption();
-  addVoter();
-  addVoter();
-
-  updateOptionButtons();
-  updateVoterButtons();
-
-  // Tarih işlevselliği
-  var startDateElement = document.getElementById('startDate');
-  var endDateElement = document.getElementById('endDate');
-  var now = new Date();
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-  var today = now.toISOString().slice(0, 16);
-
-  startDateElement.setAttribute('min', today);
-  startDateElement.addEventListener('change', function() {
-    // Bitiş tarihi için en erken seçilebilecek zamanı başlangıç zamanından sonraya ayarla
-    endDateElement.setAttribute('min', startDateElement.value);
-    // Eğer başlangıç tarihi zaten bitiş tarihinden sonra ise, bitiş tarihini sıfırla
-    if (startDateElement.value > endDateElement.value) {
-      endDateElement.value = startDateElement.value;
-    }
-  });
-
-  // Seçenek ve seçmen ekleme fonksiyonları
-  function addOption() {
-  var optionsContainer = document.getElementById('optionsContainer');
-  var newOptionEntry = document.createElement('div');
-  newOptionEntry.classList.add('input-group', 'mb-3');
-  newOptionEntry.innerHTML = `
-    <input type="text" class="form-control" name="options" required>
-    <button class="btn btn-outline-secondary removeOption" type="button">−</button>
-  `;
-  optionsContainer.appendChild(newOptionEntry);
-  updateOptionButtons(); // Butonları güncelle ekleme sonrası
-}
-function updateOptionButtons() {
-  var removeButtons = document.querySelectorAll('.removeOption');
-  if (removeButtons.length >= 2) {
-    removeButtons.forEach((button, index) => {
-      button.style.visibility = (index < 2) ? 'hidden' : 'visible'; // İlk iki butonu gizle
-    });
-  }
-}
-
-function addVoter() {
-  var votersContainer = document.getElementById('votersContainer');
-  var newVoterEntry = document.createElement('div');
-  newVoterEntry.classList.add('input-group', 'mb-3');
-  newVoterEntry.innerHTML = `
-    <input type="text" class="form-control" name="voterTc[]" placeholder="Tc kimlik No" required>
-    <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
-    <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
-    <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>
-    <button class="btn btn-outline-secondary removeVoter" type="button">−</button>
-  `;
-  votersContainer.appendChild(newVoterEntry);
-  updateVoterButtons(); // Butonları güncelle ekleme sonrası
-}
-function updateVoterButtons() {
-  var removeButtons = document.querySelectorAll('.removeVoter');
-  if (removeButtons.length >= 2) {
-    removeButtons.forEach((button, index) => {
-      button.style.visibility = (index < 2) ? 'hidden' : 'visible'; // İlk iki butonu gizle
-    });
-  }
-}
-  // Seçenek ve seçmen kaldırma işlevleri
-  document.getElementById('optionsContainer').addEventListener('click', function(event) {
-    if (event.target.classList.contains('removeOption')) {
-      var optionEntry = event.target.closest('.input-group');
-      optionEntry.remove();
-    }
-  });
-
-  document.getElementById('votersContainer').addEventListener('click', function(event) {
-    if (event.target.classList.contains('removeVoter')) {
-      var voterEntry = event.target.closest('.input-group');
-      voterEntry.remove();
-    }
-  });
-
-  // '+' butonlarının olay dinleyicileri
-  document.querySelector('.addOption').addEventListener('click', addOption);
-  document.querySelector('.addVoter').addEventListener('click', function() {
+  document.addEventListener('DOMContentLoaded', function() {
+    addOption();
+    addOption();
     addVoter();
-    updateVoterButtons(); // Butonları güncelle her ekleme sonrası
-  });
-  // Form gönderme işlevselliği
-  document.getElementById('createElectionForm').addEventListener('submit', function(event) {
-    if (startDateElement.value && endDateElement.value && startDateElement.value >= endDateElement.value) {
-      alert('Başlangıç tarihi bitiş tarihinden önce olmalıdır.');
-      event.preventDefault();
+    addVoter();
+  
+    updateOptionButtons();
+    updateVoterButtons();
+  
+    // Tarih işlevselliği
+    var startDateElement = document.getElementById('startDate');
+    var endDateElement = document.getElementById('endDate');
+    var now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    var today = now.toISOString().slice(0, 16);
+  
+    startDateElement.setAttribute('min', today);
+    startDateElement.addEventListener('change', function() {
+      // Bitiş tarihi için en erken seçilebilecek zamanı başlangıç zamanından sonraya ayarla
+      endDateElement.setAttribute('min', startDateElement.value);
+      // Eğer başlangıç tarihi zaten bitiş tarihinden sonra ise, bitiş tarihini sıfırla
+      if (startDateElement.value > endDateElement.value) {
+        endDateElement.value = startDateElement.value;
+      }
+    });
+  
+    // Seçenek ve seçmen ekleme fonksiyonları
+    function addOption() {
+    var optionsContainer = document.getElementById('optionsContainer');
+    var newOptionEntry = document.createElement('div');
+    newOptionEntry.classList.add('input-group', 'mb-3');
+    newOptionEntry.innerHTML = `
+      <input type="text" class="form-control" name="options" required>
+      <button class="btn btn-outline-secondary removeOption" type="button">−</button>
+    `;
+    optionsContainer.appendChild(newOptionEntry);
+    updateOptionButtons(); // Butonları güncelle ekleme sonrası
+  }
+  function updateOptionButtons() {
+    var removeButtons = document.querySelectorAll('.removeOption');
+    if (removeButtons.length >= 2) {
+      removeButtons.forEach((button, index) => {
+        button.style.visibility = (index < 2) ? 'hidden' : 'visible'; // İlk iki butonu gizle
+      });
     }
+  }
+  
+  function addVoter() {
+    var votersContainer = document.getElementById('votersContainer');
+    var newVoterEntry = document.createElement('div');
+    newVoterEntry.classList.add('input-group', 'mb-3');
+    newVoterEntry.innerHTML = `
+      <input type="text" class="form-control" name="voterTc[]" placeholder="Tc kimlik No" required>
+      <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
+      <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
+      <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>
+      <button class="btn btn-outline-secondary removeVoter" type="button">−</button>
+    `;
+    votersContainer.appendChild(newVoterEntry);
+    updateVoterButtons(); // Butonları güncelle ekleme sonrası
+  }
+  function updateVoterButtons() {
+    var removeButtons = document.querySelectorAll('.removeVoter');
+    if (removeButtons.length >= 2) {
+      removeButtons.forEach((button, index) => {
+        button.style.visibility = (index < 2) ? 'hidden' : 'visible'; // İlk iki butonu gizle
+      });
+    }
+  }
+    // Seçenek ve seçmen kaldırma işlevleri
+    document.getElementById('optionsContainer').addEventListener('click', function(event) {
+      if (event.target.classList.contains('removeOption')) {
+        var optionEntry = event.target.closest('.input-group');
+        optionEntry.remove();
+      }
+    });
+  
+    document.getElementById('votersContainer').addEventListener('click', function(event) {
+      if (event.target.classList.contains('removeVoter')) {
+        var voterEntry = event.target.closest('.input-group');
+        voterEntry.remove();
+      }
+    });
+  
+    // '+' butonlarının olay dinleyicileri
+    document.querySelector('.addOption').addEventListener('click', addOption);
+    document.querySelector('.addVoter').addEventListener('click', function() {
+      addVoter();
+      updateVoterButtons(); // Butonları güncelle her ekleme sonrası
+    });
+    // Form gönderme işlevselliği
+    document.getElementById('createElectionForm').addEventListener('submit', function(event) {
+      if (startDateElement.value && endDateElement.value && startDateElement.value >= endDateElement.value) {
+        alert('Başlangıç tarihi bitiş tarihinden önce olmalıdır.');
+        event.preventDefault();
+      }
+    });
   });
-});
-
-</script>
-
+  
+  </script>
+  
 {% endblock %}
+  
