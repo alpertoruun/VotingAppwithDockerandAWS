@@ -1,5 +1,6 @@
 from datetime import datetime
 from collections import defaultdict
+import pandas as pd
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 from src.accounts.models import db, Election, Voter, Option, Votes, VoteToken
@@ -121,17 +122,27 @@ def base():
 @core_bp.route("/create_election", methods=['GET', 'POST'])
 @login_required
 def create_election():
-
     if request.method == 'POST':
         title = request.form.get('title')
         description = request.form.get('description')
         start_date = request.form.get('startDate')
         end_date = request.form.get('endDate')
-        options = request.form.getlist('options')  
-        voter_tcs = request.form.getlist('voterTc[]')
-        voter_names = request.form.getlist('voterName[]')
-        voter_surnames = request.form.getlist('voterSurname[]')
-        voter_emails = request.form.getlist('voterEmail[]')
+        options = request.form.getlist('options')
+        
+        # CSV Dosyasını İşleme
+        csv_file = request.files.get('csvFile')
+        if csv_file:
+            df = pd.read_csv(csv_file)
+            voter_tcs = df['tc'].tolist()
+            voter_names = df['name'].tolist()
+            voter_surnames = df['surname'].tolist()
+            voter_emails = df['email'].tolist()
+        else:
+            voter_tcs = request.form.getlist('voterTc[]')
+            voter_names = request.form.getlist('voterName[]')
+            voter_surnames = request.form.getlist('voterSurname[]')
+            voter_emails = request.form.getlist('voterEmail[]')
+
         voter_data = zip(voter_tcs, voter_emails)
         email_to_tc = defaultdict(set)
         error = False
@@ -161,8 +172,6 @@ def create_election():
         if error:
             return redirect(url_for('core.create_election', _external=True))
 
-
-
         election = Election(
             title=title,
             description=description,
@@ -176,7 +185,6 @@ def create_election():
         for option_desc in options:
             option = Option(description=option_desc, election_id=election.id)
             db.session.add(option)
-        
 
         for tc, name, surname, email in zip(voter_tcs, voter_names, voter_surnames, voter_emails):
             voter = Voter.query.filter_by(tc=tc).first()
