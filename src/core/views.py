@@ -26,7 +26,7 @@ def election_voters(encrypted_election_id):
 
     if current_user.id != election.creator_id:
         flash('Bu sayfayı görüntüleme yetkiniz yok.', 'warning')
-        return redirect(url_for('core.index'))
+        return redirect(url_for('core.index', _external=True))
 
     page = request.args.get('page', 1, type=int)
     per_page = 18
@@ -107,14 +107,14 @@ def vote(token):
             
             flash('Oyunuz kaydedildi!', 'success')
             encrypted_election_id = encrypt_id(election.id)
-            return redirect(url_for('core.election_results', encrypted_election_id=encrypted_election_id))
+            return redirect(url_for('core.election_results', encrypted_election_id=encrypted_election_id, _external=True))
 
     return render_template('core/vote.html', election=election, options=options)
 
 @core_bp.route('/')
 @login_required
 def base():
-    return redirect(url_for('core.create_election'))
+    return redirect(url_for('core.create_election', _external=True))
 
 
 
@@ -148,7 +148,7 @@ def create_election():
             email_to_tc[email].add(tc)
 
         if error:
-            return redirect(url_for('core.create_election'))
+            return redirect(url_for('core.create_election', _external=True))
         voter_expanded_data = zip(voter_tcs, voter_names, voter_surnames, voter_emails)
         for tc, name, surname, email in voter_expanded_data:
             for other_tc, other_name, other_surname, other_email in voter_expanded_data:
@@ -159,7 +159,7 @@ def create_election():
             if error:
                 break
         if error:
-            return redirect(url_for('core.create_election'))
+            return redirect(url_for('core.create_election', _external=True))
 
 
 
@@ -192,6 +192,6 @@ def create_election():
             send_vote_link(voter, token, election)
 
         flash('Oylama başarıyla oluşturuldu!', "success")
-        return redirect(url_for("core.my_elections"))
+        return redirect(url_for("core.my_elections", _external=True))
         
     return render_template("core/index.html")
