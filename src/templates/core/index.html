@@ -123,7 +123,7 @@
       var newVoterEntry = document.createElement('div');
       newVoterEntry.classList.add('input-group', 'mb-3');
       newVoterEntry.innerHTML = `
-        <input type="text" class="form-control" name="voterTc[]" placeholder="Tc kimlik No" required>
+        <input type="text " class="form-control voter-tc" name="voterTc[]" placeholder="Tc kimlik No" required>
         <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
         <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
         <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>
@@ -131,6 +131,7 @@
       `;
       votersContainer.appendChild(newVoterEntry);
       updateVoterButtons(); // Butonları güncelle ekleme sonrası
+      addTcNoValidation();
     }
     
     function updateVoterButtons() {
@@ -224,7 +225,7 @@
       var newVoterEntry = document.createElement('div');
       newVoterEntry.classList.add('input-group', 'mb-3');
       newVoterEntry.innerHTML = `
-        <input type="text" class="form-control" name="voterTc[]" value="${tc}" placeholder="Tc kimlik No" required>
+        <input type="text" class="form-control voter-tc" name="voterTc[]" value="${tc}" placeholder="Tc kimlik No" required>
         <input type="text" class="form-control" name="voterName[]" value="${name}" placeholder="Ad" required>
         <input type="text" class="form-control" name="voterSurname[]" value="${surname}" placeholder="Soyad" required>
         <input type="email" class="form-control" name="voterEmail[]" value="${email}" placeholder="E-posta" required>
@@ -232,7 +233,27 @@
       `;
       votersContainer.appendChild(newVoterEntry);
       updateVoterButtons();
+      addTcNoValidation();
     }
+
+    // TC Kimlik No Validasyonu
+    function addTcNoValidation() {
+      var tcFields = document.querySelectorAll('.voter-tc');
+      tcFields.forEach(tcField => {
+        tcField.addEventListener('input', function() {
+          var value = this.value;
+          var isValid = /^\d{11}$/.test(value);
+          if (!isValid) {
+            this.setCustomValidity('TC kimlik numarası 11 haneli olmalıdır.');
+          } else {
+            this.setCustomValidity('');
+          }
+        });
+      });
+    }
+
+    // İlk TC Kimlik No validasyonları ekleyin
+    addTcNoValidation();
   });
 </script>
 

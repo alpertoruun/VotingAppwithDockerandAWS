@@ -7,21 +7,21 @@ from src.accounts.models import User
 
 class LoginForm(FlaskForm):
     email = EmailField("Email", validators=[DataRequired(), Email()])
-    password = PasswordField("Password", validators=[DataRequired()])
+    password = PasswordField("Şifre", validators=[DataRequired(), Length(min=6, max=25, message="Şifreniz 6 ile 25 karakter arasında olmalıdır!")])
 
 
 class RegisterForm(FlaskForm):
     email = EmailField(
-        "Email", validators=[DataRequired(), Email(message=None), Length(min=6, max=40)]
+        "Email", validators=[DataRequired(), Email(message="Geçersiz mail"), Length(min=6, max=40)]
     )
     password = PasswordField(
-        "Password", validators=[DataRequired(), Length(min=6, max=25)]
+        "Şifre", validators=[DataRequired(), Length(min=6, max=25, message="Şifreniz 6 ile 25 karakter arasında olmalıdır!")]
     )
     confirm = PasswordField(
-        "Repeat password",
+        "Yeni şifrenizi tekrarlayın",
         validators=[
             DataRequired(),
-            EqualTo("password", message="Passwords must match."),
+            EqualTo("password", message="Şifreler eşleşmiyor."),
         ],
     )
 
@@ -31,10 +31,7 @@ class RegisterForm(FlaskForm):
             return False
         user = User.query.filter_by(email=self.email.data).first()
         if user:
-            self.email.errors.append("Email already registered")
-            return False
-        if self.password.data != self.confirm.data:
-            self.password.errors.append("Passwords must match")
+            self.email.errors.append("Email zaten kayıtlı")
             return False
         return True
     
@@ -44,32 +41,32 @@ class RequestResetForm(FlaskForm):
 
 class PasswordChangeForm_(FlaskForm):
     password = PasswordField(
-        "Password", validators=[DataRequired(), Length(min=6, max=25)]
+        "Şifre", validators=[DataRequired(), Length(min=6, max=25, message="Şifreniz 6 ile 25 karakter arasında olmalıdır!")]
     )
     confirm = PasswordField(
-        "Repeat Password",
+        "Yeni şifrenizi tekrarlayın",
         validators=[
             DataRequired(),
-            EqualTo("password", message="Passwords must match.")
+            EqualTo("password", message="Şifreler eşleşmiyor.")
         ],
     )
 
 
 class EmailChangeForm(FlaskForm):
-    email = EmailField('New Email', validators=[DataRequired(), Email()])
+    email = EmailField('Yeni Mail Adresi', validators=[DataRequired(), Email()])
 
 
 class PasswordChangeForm(FlaskForm):
-    current_password = PasswordField('Current Password', validators=[validators.DataRequired()])
-    new_password = PasswordField('New Password', validators=[
+    current_password = PasswordField('Mevcut şifreniz', validators=[validators.DataRequired()])
+    new_password = PasswordField('Yeni şifre', validators=[
         validators.DataRequired(),
-        validators.Length(min=6, message='Your password must be at least 6 characters long.')
+        validators.Length(min=6, max=25, message="Şifreniz 6 ile 25 karakter arasında olmalıdır!")
     ])
     confirm_password = PasswordField(
-        "Repeat Password",
+        "Yeni şifrenizi tekrarlayın",
         validators=[
             validators.DataRequired(),
-            validators.EqualTo('new_password', message="Passwords must match.")
+            validators.EqualTo('new_password', message="Şifreler eşleşmiyor.")
         ]
     )
     submit = SubmitField('Change Password')

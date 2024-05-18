@@ -15,6 +15,10 @@ mail = Mail(app)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+login_manager.login_message = "Bu sayfaya erişmek için lütfen oturum açın."
+login_manager.login_message_category = "warning"
+
 bcrypt = Bcrypt(app)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)

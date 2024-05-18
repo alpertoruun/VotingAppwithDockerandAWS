@@ -20,7 +20,7 @@ accounts_bp = Blueprint("accounts", __name__)
 def update_mail(token):
     user_id, new_email = verify_update_token(token)
     if not user_id:
-        flash('This is an invalid or expired token', 'warning')
+        flash('Bu token kullanılmış ya da geçersiz', 'warning')
         return redirect(url_for('accounts.user_info', user_id=current_user.id, _external=True))
     
     if current_user.id != int(user_id):
@@ -51,7 +51,7 @@ def user_info(user_id):
     if email_form.validate_on_submit() and 'email' in request.form:
         new_email = email_form.email.data
         if User.query.filter_by(email=new_email).first():
-            flash('Email already registered.', 'error')
+            flash('Bu mail adresi zaten kayıtlı.', 'error')
             return redirect(url_for('accounts.user_info', user_id=user_id, _external=True))
 
         token = create_update_email_entry(user.id, new_email)
@@ -62,7 +62,7 @@ def user_info(user_id):
     if password_form.validate_on_submit() and 'password' in request.form:
         if bcrypt.check_password_hash(user.password, password_form.current_password.data):
             if bcrypt.check_password_hash(user.password, password_form.new_password.data):
-                flash('New password cannot be the same as the old password.', 'warning')
+                flash('Yeni şifreniz eskisiyle aynı olamaz.', 'warning')
                 return redirect(url_for('accounts.user_info', user_id=user_id, _external=True))
             user.password = bcrypt.generate_password_hash(password_form.new_password.data).decode('utf-8')
             db.session.commit()
@@ -83,7 +83,7 @@ def reset_password(token):
 
     user_id = verify_reset_token(token)
     if not user_id:
-        flash('This is an invalid or expired token', 'warning')
+        flash('Bu token kullanılmış ya da geçersiz', 'warning')
         return redirect(url_for('accounts.reset_password_request', _external=True))
 
     form = PasswordChangeForm_()
@@ -91,7 +91,7 @@ def reset_password(token):
         user = User.query.get(user_id)
         if user:
             if bcrypt.check_password_hash(user.password, form.password.data):
-                flash('New password cannot be the same as the old password.', 'warning')
+                flash('Yeni şifreniz eskisiyle aynı olamaz.', 'warning')
                 return redirect(url_for('accounts.reset_password', token=token, _external=True))
 
             user.password = bcrypt.generate_password_hash(form.password.data).decode('utf-8')
@@ -99,10 +99,10 @@ def reset_password(token):
             if reset_entry:
                 reset_entry.used = True
                 db.session.commit()
-            flash('Your password has been updated!', 'success')
+            flash('Şifreniz başarıyla güncellendi.', 'success')
             return redirect(url_for('accounts.login', _external=True))
         else:
-            flash('User not found.', 'danger')
+            flash('Kullanıcı bulunamadı', 'danger')
             return redirect(url_for('accounts.login', _external=True))
     return render_template('accounts/reset_password.html', form=form)
 
@@ -120,10 +120,10 @@ def reset_password_request():
         if user:
             token = create_password_reset_entry(user.id)
             send_reset_email(user, token)
-            flash('An email has been sent with instructions to reset your password.', 'info')
+            flash('Şifre sıfırlama bağlantısını içeren mail gönderildi', 'info')
             return redirect(url_for('accounts.login', _external=True))
         else:
-            flash('No account with that email address exists.', 'warning')
+            flash('Bu mail adresi ile kayıtlı kullanıcı yok.', 'warning')
     return render_template('accounts/reset_password_request.html', title='Reset Password', form=form)
 
 
@@ -131,15 +131,15 @@ def reset_password_request():
 @accounts_bp.route("/register", methods=["GET", "POST"])
 def register():
     if current_user.is_authenticated:
-        flash("You are already registered.", "info")
+        flash("Zaten kayıt oldunuz.", "info")
         return redirect(url_for("core.create_election", _external=True))
     form = RegisterForm(request.form)
     if form.validate_on_submit():
         user = User(email=form.email.data, password=form.password.data)
         db.session.add(user)
         db.session.commit()
-        send_email("Welcome to Our App!", user.email, "Thank you for signing up. We're glad to have you!")
-        flash("You registered.Welcome!", "success")
+        send_email("Hoşgeldiniz!", user.email, "Kayıt olduğunuz için teşekkür ederiz. Sizi burada görmek çok güzel.")
+        flash("Kayıt başarıyla tammamlandı.Hoşgeldiniz!", "success")
         return redirect(url_for("accounts.login", _external=True))
 
     return render_template("accounts/register.html", form=form)
@@ -148,7 +148,7 @@ def register():
 @accounts_bp.route("/login", methods=["GET", "POST"])
 def login():
     if current_user.is_authenticated:
-        flash("You are already logged in.", "info")
+        flash("Zaten giriş yaptınız.", "info")
         return redirect(url_for("core.create_election", _external=True))
     form = LoginForm(request.form)
     if form.validate_on_submit():
@@ -157,7 +157,7 @@ def login():
             login_user(user)
             return redirect(url_for("core.create_election", _external=True))
         else:
-            flash("Invalid email and/or password.", "danger")
+            flash("Geçersiz email veya şifre", "danger")
             return render_template("accounts/login.html", form=form)
     return render_template("accounts/login.html", form=form)
 
@@ -168,5 +168,5 @@ def login():
 @login_required
 def logout():
     logout_user()
-    flash("You were logged out.", "success")
+    flash("Çıkış yaptınız.", "success")
     return redirect(url_for("accounts.login", _external=True))
