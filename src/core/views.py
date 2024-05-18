@@ -31,7 +31,7 @@ def election_voters(encrypted_election_id):
     page = request.args.get('page', 1, type=int)
     per_page = 18
     vote_tokens_query = VoteToken.query.filter_by(election_id=election_id).join(Voter, VoteToken.voter_id == Voter.id)
-    vote_tokens_paginated = vote_tokens_query.paginate(page=page, per_page=per_page, error_out=False)
+    vote_tokens_paginated = vote_tokens_query.paginate(page=page, per_page=per_page, error_out=True)
     voter_info = [(token, Voter.query.get(token.voter_id)) for token in vote_tokens_paginated.items]
     print(voter_info)
 
@@ -45,7 +45,7 @@ def my_elections():
     page = request.args.get('page', 1, type=int)
     per_page = 18
     elections_query = Election.query.filter_by(creator_id=current_user.id)
-    elections = elections_query.paginate(page=page, per_page=per_page, error_out=False)
+    elections = elections_query.paginate(page=page, per_page=per_page, error_out=True)
     encrypted_elections = [(encrypt_id(election.id), election) for election in elections.items]
     return render_template('core/my_elections.html', elections=encrypted_elections, pagination=elections)
 
