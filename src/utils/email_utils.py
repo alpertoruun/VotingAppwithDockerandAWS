@@ -11,12 +11,12 @@ def send_email(subject, recipient, body):
 
 def send_reset_email(user, token):
     mail = app.extensions.get('mail')
-    msg = Message('Password Reset Request', sender=app.config['MAIL_USERNAME'], recipients=[user.email])
+    msg = Message('Şifre Değiştirme İsteği', sender=app.config['MAIL_USERNAME'], recipients=[user.email])
     reset_url = url_for('accounts.reset_password', token=token, _external=True)
-    msg.body = f"""To reset your password, visit the following link:
+    msg.body = f"""Şifrenizi sıfırlamak için, alttaki linke tıklayınız:
 {reset_url}
 
-If you did not make this request then simply ignore this email and no changes will be made."""
+Bu talepte bulunmadıysanız, bu e-postayı görmezden gelin ve hiçbir değişiklik yapılmayacaktır"""
     mail.send(msg)
 
 
@@ -38,8 +38,8 @@ def send_async_email(app, msg):
 
 def send_update_email(new_mail, token):
     mail = app.extensions.get('mail')
-    msg = Message('Update Your Email Address', sender=app.config['MAIL_USERNAME'], recipients=[new_mail])
+    msg = Message('Email Adresinizi Güncelleyin', sender=app.config['MAIL_USERNAME'], recipients=[new_mail])
     update_url = url_for('accounts.update_mail', token=token, _external=True)
-    msg.body = f"To update your email address, please visit the following link:\n{update_url}\n\nIf you did not request this email change, please ignore this email and no changes will be made."
+    msg.body = f"E-posta adresinizi güncellemek için lütfen aşağıdaki bağlantıyı ziyaret edin:\n{update_url}\n\nBu e-posta değişikliğini talep etmediyseniz, lütfen bu e-postayı dikkate almayın ve hiçbir değişiklik yapılmayacaktır."
 
     mail.send(msg)
