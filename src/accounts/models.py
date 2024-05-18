@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask_login import UserMixin
 
@@ -36,11 +36,10 @@ class Election(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=True)
-    start_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    end_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    start_date = db.Column(db.DateTime, nullable=False, default=datetime.now(timezone.utc))
+    end_date = db.Column(db.DateTime, nullable=False, default=datetime.now(timezone.utc))
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    options = db.relationship('Option', backref='election', lazy=True)
-    votes = db.relationship('Votes', backref='election', lazy=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.now(timezone.utc))
 
 class Option(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -53,7 +52,7 @@ class Votes(db.Model):
     voter_id = db.Column(db.Integer, db.ForeignKey('voter.id'), nullable=False)
     election_id = db.Column(db.Integer, db.ForeignKey('election.id'), nullable=False)
     option_id = db.Column(db.Integer, db.ForeignKey('option.id'), nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 
 class OptionCount(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -79,7 +78,7 @@ class PasswordResetToken(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     token = db.Column(db.String(256), unique=True, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     used = db.Column(db.Boolean, default=False, nullable=False)
     user = db.relationship('User', backref=db.backref('password_reset_tokens', lazy=True))
 
@@ -89,7 +88,7 @@ class UpdateEmailToken(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     token = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), nullable=False)
     new_mail = db.Column(db.String(255), nullable=False)
     used = db.Column(db.Boolean, default=False, nullable=False)
 
