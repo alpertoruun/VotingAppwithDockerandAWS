@@ -16,7 +16,7 @@ def send_reset_email(user, token):
     msg.body = f"""Şifrenizi sıfırlamak için, alttaki linke tıklayınız:
 {reset_url}
 
-Bu talepte bulunmadıysanız, bu e-postayı görmezden gelin ve hiçbir değişiklik yapılmayacaktır"""
+Bu talepte bulunmadıysanız, bu e-postayı görmezden gelin. Hiçbir değişiklik yapılmayacaktır"""
     mail.send(msg)
 
 
