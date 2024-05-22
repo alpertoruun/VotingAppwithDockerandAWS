@@ -24,7 +24,7 @@ def update_mail(token):
         return redirect(url_for('accounts.user_info', user_id=current_user.id, _external=True))
     
     if current_user.id != int(user_id):
-        flash('Bu sayfayi görme yetkiniz yok.', 'danger')
+        flash('Bu sayfayu görme yetkiniz yok.', 'danger')
         return render_template('errors/404.html')
     
 
@@ -41,7 +41,7 @@ def update_mail(token):
 @login_required
 def user_info(user_id):
     if current_user.id != int(user_id):
-        flash('Bu sayfayi görme yetkiniz yok.', 'danger')
+        flash('Bu sayfayı görme yetkiniz yok.', 'danger')
         return render_template('errors/404.html')
 
     user = User.query.get(user_id)
