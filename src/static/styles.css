@@ -1,14 +1,14 @@
 .input-group {
   display: flex;
-  align-items: center; /* İçerikleri dikey olarak hizalar */
-  justify-content: space-between; /* İçerik arasında boşluk bırakır */
+  align-items: center; /* İçerikleri dikey olarak hizalamak için */
+  justify-content: space-between; /* İçerik arasında boşluk bıraktim */
 }
 
 .input-group input {
-  flex: 1; /* Input alanları esnek büyüyebilir */
-  margin-right: 8px; /* Sağa boşluk bırakır */
+  flex: 1; /* Input alanları esnek büyüyebilir(uzunluğa göre) */
+  margin-right: 8px; /* Sağa boşluk bıraktım */
 }
 
 .input-group button {
-  white-space: nowrap; /* Buton metinlerinin alt satıra geçmesini önler */
+  white-space: nowrap; /* Buton metinlerinin alt satıra geçmesini önledim */
 }

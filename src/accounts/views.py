@@ -51,7 +51,7 @@ def user_info(user_id):
     if email_form.validate_on_submit() and 'email' in request.form:
         new_email = email_form.email.data
         if User.query.filter_by(email=new_email).first():
-            flash('Bu mail adresi zaten kayıtlı.', 'error')
+            flash('Bu mail adresi zaten kayıtlı.', 'warning')
             return redirect(url_for('accounts.user_info', user_id=user_id, _external=True))
 
         token = create_update_email_entry(user.id, new_email)
