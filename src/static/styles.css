@@ -6,7 +6,7 @@
 
 .input-group input {
   flex: 1; /* Input alanları esnek büyüyebilir(uzunluğa göre) */
-  margin-right: 8px; /* Sağa boşluk bıraktım */
+  margin-right: 8px; /* Input alanlarında Sağa boşluk bıraktım */
 }
 
 .input-group button {
