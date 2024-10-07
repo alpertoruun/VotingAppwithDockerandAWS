@@ -182,9 +182,11 @@ def login():
         if user and bcrypt.check_password_hash(user.password, request.form["password"]):
             if not user.is_approved:
                 flash("Lütfen hesabınızı doğrulayın.", "warning")
-                token = create_email_verification_entry(user.id)
-                send_verify_email(user,token)
+                resend_url = url_for('accounts.resend_verification', user_id=user.id, _external=True)
+                flash(f"Lütfen hesabınızı doğrulayın. <a href='{resend_url}'>Doğrulama linkini tekrar göndermek için tıklayınız.</a>", 'info')
+
                 return render_template("accounts/login.html", form=form)
+
             login_user(user)
             return redirect(url_for("core.create_election", _external=True))
         else:
@@ -194,6 +196,23 @@ def login():
     return render_template("accounts/login.html", form=form)
 
 
+@accounts_bp.route("/resend_verification/<int:user_id>", methods=["GET"])
+def resend_verification(user_id):
+    user = User.query.get(user_id)
+
+    if not user:
+        flash('Kullanıcı bulunamadı.', 'danger')
+        return redirect(url_for('accounts.login', _external=True))
+
+    if user.is_approved:
+        flash('Hesabınız zaten doğrulanmış.', 'info')
+        return redirect(url_for('accounts.login', _external=True))
+
+    token = create_email_verification_entry(user.id)
+    send_verify_email(user, token)
+    
+    flash(f"Doğrulama linki e-posta adresinize tekrar gönderildi.", 'info')
+    return redirect(url_for('accounts.login', _external=True))
 
 
 
