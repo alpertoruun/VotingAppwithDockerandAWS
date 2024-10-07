@@ -1,10 +1,11 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_required, login_user, logout_user, current_user
 
-from src.utils.email_utils import send_email, send_reset_email, send_update_email
+from src.utils.email_utils import send_email, send_reset_email, send_update_email, send_verify_email
 from src.utils.password_token_utils import create_password_reset_entry, verify_reset_token
 from src.utils.email_validator import validate_email, EmailNotValidError
 from src.utils.update_email_token_utils import create_update_email_entry, verify_update_token
+from src.utils.verify_email_utils import create_email_verification_entry, verify_email_token
 
 
 
@@ -138,11 +139,35 @@ def register():
         user = User(email=form.email.data, password=form.password.data)
         db.session.add(user)
         db.session.commit()
-        send_email("Hoşgeldiniz!", user.email, "Kayıt olduğunuz için teşekkür ederiz. Sizi burada görmek çok güzel.")
-        flash("Kayıt başarıyla tammamlandı.Hoşgeldiniz!", "success")
+        token = create_email_verification_entry(user.id)
+        send_verify_email(user,token)
+        flash("Mailinize gelen onay linkine tıklayınız.Hoşgeldiniz!", "success")
         return redirect(url_for("accounts.login", _external=True))
 
     return render_template("accounts/register.html", form=form)
+
+@accounts_bp.route('/verify_email/<token>', methods=['GET'])
+def verify_email(token):
+    if current_user.is_authenticated:
+        return redirect(url_for('core.create_election', _external=True))
+    user_id = verify_email_token(token)
+    if not user_id:
+        flash('Bu token kullanılmış ya da geçersiz.', 'warning')
+        return redirect(url_for('accounts.login', _external=True))
+
+    user = User.query.get(user_id)
+    if user:
+        if user.is_approved:
+            flash('Hesabınız zaten doğrulanmış.', 'info')
+            return redirect(url_for('accounts.login', _external=True))
+        user.is_approved = True
+        db.session.commit()
+        flash('Hesabınız başarıyla doğrulandı.', 'success')
+        return redirect(url_for('accounts.login', _external=True))
+    else:
+        flash('Kullanıcı bulunamadı.', 'danger')
+        return redirect(url_for('accounts.login', _external=True))
+
 
 
 @accounts_bp.route("/login", methods=["GET", "POST"])
@@ -150,16 +175,24 @@ def login():
     if current_user.is_authenticated:
         flash("Zaten giriş yaptınız.", "info")
         return redirect(url_for("core.create_election", _external=True))
+
     form = LoginForm(request.form)
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user and bcrypt.check_password_hash(user.password, request.form["password"]):
+            if not user.is_approved:
+                flash("Lütfen hesabınızı doğrulayın.", "warning")
+                token = create_email_verification_entry(user.id)
+                send_verify_email(user,token)
+                return render_template("accounts/login.html", form=form)
             login_user(user)
             return redirect(url_for("core.create_election", _external=True))
         else:
             flash("Geçersiz email veya şifre", "danger")
             return render_template("accounts/login.html", form=form)
+
     return render_template("accounts/login.html", form=form)
+
 
 
 

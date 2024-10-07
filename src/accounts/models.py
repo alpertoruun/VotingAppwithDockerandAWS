@@ -14,12 +14,14 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String, nullable=False)
     created_on = db.Column(db.DateTime, nullable=False)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
+    is_approved = db.Column(db.Boolean, nullable=False, default=False) 
 
-    def __init__(self, email, password, is_admin=False):
+    def __init__(self, email, password, is_admin=False, is_approved=False):
         self.email = email
         self.password = bcrypt.generate_password_hash(password).decode('utf-8')
         self.created_on = datetime.now()
         self.is_admin = is_admin
+        self.is_approved = is_approved
 
     def __repr__(self):
         return f"<email {self.email}>"
@@ -96,3 +98,16 @@ class UpdateEmailToken(db.Model):
 
     def __repr__(self):
         return f'<UpdateEmailToken {self.token}>'
+
+
+class VerifyMailToken(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    token = db.Column(db.String(256), unique=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc), nullable=False)
+    is_used = db.Column(db.Boolean, default=False, nullable=False)
+    
+    user = db.relationship('User', backref=db.backref('verify_mail_tokens', lazy=True))
+
+    def __repr__(self):
+        return f'<VerifyMailToken {self.token}>'

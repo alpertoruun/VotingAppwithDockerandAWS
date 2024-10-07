@@ -5,7 +5,6 @@ from flask import current_app
 from datetime import datetime, timezone
 from src import db
 from src.accounts.models import PasswordResetToken
-import pytz
 
 def generate_reset_token():
     """Generate a secure random string for password reset token."""

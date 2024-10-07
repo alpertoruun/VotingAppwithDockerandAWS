@@ -52,3 +52,18 @@ def send_update_email(new_mail, token):
     msg.body = f"E-posta adresinizi güncellemek için lütfen aşağıdaki bağlantıyı ziyaret edin:\n{update_url}\n\nBu e-posta değişikliğini talep etmediyseniz, lütfen bu e-postayı dikkate almayın ve hiçbir değişiklik yapılmayacaktır."
 
     mail.send(msg)
+
+
+def send_verify_email(user, token):
+    mail = current_app.extensions.get('mail')
+    msg = Message('E-posta Adresinizi Doğrulayın',
+                  sender=current_app.config['MAIL_USERNAME'],
+                  recipients=[user.email])
+    verify_url = url_for('accounts.verify_email', token=token, _external=True)
+    
+    msg.body = (
+        f'Kayıt olduğunuz için teşekkür ederiz! Lütfen e-posta adresinizi doğrulamak için aşağıdaki bağlantıya tıklayın:\n'
+        f'{verify_url}\n\n'
+        'Eğer bu işlemi siz yapmadıysanız, lütfen bu e-postayı görmezden gelin.'
+    )    
+    mail.send(msg)
