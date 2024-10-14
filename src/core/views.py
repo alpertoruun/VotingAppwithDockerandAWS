@@ -2,7 +2,7 @@ from datetime import datetime
 from collections import defaultdict
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
-from src.accounts.models import db, Election, Voter, Option, Votes, VoteToken
+from src.accounts.models import db, Election, Voter, Option, Votes, VoteToken, OptionCount
 from src.utils.email_utils import send_vote_link
 from src.utils.email_validator import validate_email_address, EmailNotValidError
 from src.utils.vote_token_utils import create_vote_token_entry
@@ -26,7 +26,7 @@ def election_voters(encrypted_election_id):
 
     if current_user.id != election.creator_id:
         flash('Bu sayfayı görüntüleme yetkiniz yok.', 'warning')
-        return redirect(url_for('core.index', _external=True))
+        return redirect(url_for('core.my_elections', _external=True))
 
     page = request.args.get('page', 1, type=int)
     per_page = 18
@@ -57,28 +57,24 @@ def my_elections():
 def election_results(encrypted_election_id):
     election_id = decrypt_id(encrypted_election_id)
     if election_id is None:
-        abort(404)  # Geçersiz veya zaman aşımına uğramış şifreli ID
+        abort(404)  
     
     election = Election.query.get(election_id)
     if not election:
-        abort(404)  # Election bulunamadı
-
-    options = Option.query.filter_by(election_id=election.id).all()
-    votes = Votes.query.filter_by(election_id=election.id).all()
-    total_tokens = VoteToken.query.filter_by(election_id=election.id).count()
-
-    # Oylama sonuçlarını ve katılım oranını hesapla
-    results = {option.description: 0 for option in options}
-    for vote in votes:
-        results[vote.option.description] += 1
+        abort(404)  
     
-    # Katılım oranını hesapla (% cinsinden)
-    if total_tokens > 0:
-        participation_rate = (len(votes) / total_tokens) * 100
-    else:
-        participation_rate = 0
+    option_counts = OptionCount.query.filter_by(election_id=election.id).all()
+
+    if not option_counts:
+        flash("Bu seçim için henüz oy sonuçları sayılmamış.", "warning")
+        return redirect(url_for('core.my_elections'))
+
+    results = {Option.query.get(count.option_id).description: count.vote_count for count in option_counts}
+
+    participation_rate = election.participation_rate
 
     return render_template('core/results.html', election=election, results=results, participation_rate=participation_rate)
+
 
 
 @core_bp.route('/vote/<token>', methods=['GET', 'POST'])
@@ -89,8 +85,10 @@ def vote(token):
         return render_template("errors/404.html")
 
     election = Election.query.get(vote_token.election_id)
+    voter = Voter.query.get(vote_token.voter_id)  
     options = Option.query.filter_by(election_id=election.id).all()
     now = datetime.now()
+
     if not (election.start_date <= now <= election.end_date):
         flash('Bu oylama için oy verme süresi geçmiş veya henüz başlamamış.', 'warning')
         return render_template("errors/404.html")
@@ -110,7 +108,7 @@ def vote(token):
             
             flash('Oyunuz kaydedildi!', 'success')
             encrypted_election_id = encrypt_id(election.id)
-            return redirect(url_for('core.election_results', encrypted_election_id=encrypted_election_id, _external=True))
+            return render_template('core/vote_confirmation.html', election=election, voter=voter)
 
     return render_template('core/vote.html', election=election, options=options)
 

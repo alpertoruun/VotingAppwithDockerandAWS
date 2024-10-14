@@ -42,6 +42,10 @@ class Election(db.Model):
     end_date = db.Column(db.DateTime, nullable=False, default=datetime.now(timezone.utc))
     creator_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.now(timezone.utc))
+    is_counted = db.Column(db.Boolean, nullable=False, default=False) 
+    participation_rate = db.Column(db.Float, default=0.0, nullable=False)  
+
+
 
 class Option(db.Model):
     id = db.Column(db.Integer, primary_key=True)

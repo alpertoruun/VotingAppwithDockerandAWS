@@ -7,7 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail
 from flask_wtf import CSRFProtect
 from cryptography.fernet import Fernet
-
+from flask_apscheduler import APScheduler  # APScheduler import edildi
 
 app = Flask(__name__)
 app.config.from_object(config("APP_SETTINGS"))
@@ -24,10 +24,9 @@ db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
 fernet_key = config('FERNET_KEY')
-app.extensions['fernet']=Fernet(fernet_key)
+app.extensions['fernet'] = Fernet(fernet_key)
 
 csrf = CSRFProtect(app)
-
 
 # Registering blueprints
 from src.accounts.views import accounts_bp
@@ -41,14 +40,24 @@ from src.accounts.models import User
 login_manager.login_view = "accounts.login"
 login_manager.login_message_category = "danger"
 
+# Zamanlanmış Görev için APScheduler başlatıldı
+scheduler = APScheduler()
+
+# Zamanlanmış görev: 60 saniyede bir çalışacak
+@scheduler.task('interval', id='count_votes_job', seconds=60)
+def scheduled_count_votes():
+    with scheduler.app.app_context():
+        from src.utils.count_votes_utils import count_votes
+        count_votes()
+
+scheduler.init_app(app)
+scheduler.start()
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.filter(User.id == int(user_id)).first()
 
-
-#### error handlers 
-
+#### error handlers
 
 @app.errorhandler(401)
 def unauthorized_page(error):
