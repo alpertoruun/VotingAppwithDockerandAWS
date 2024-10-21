@@ -5,7 +5,7 @@ from threading import Thread
 from src.accounts.models import db,VoteToken, Voter, OptionCount, Election, Votes, Option
 import logging
 from datetime import datetime, timezone
-from src.utils.send_results_email import send_results_email
+from src.utils.email_utils import send_results_email
 
 
 def count_votes():

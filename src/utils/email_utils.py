@@ -1,69 +1,81 @@
 from flask_mail import Message
 from flask import current_app, url_for
 from threading import Thread
+from src.accounts.models import VoteToken, Voter
+from src.utils.encrypt_election_id import encrypt_id
 import logging
 
-
-
+# E-posta gönderme fonksiyonu
 def send_email(subject, recipient, body):
     mail = current_app.extensions.get('mail')
     msg = Message(subject, sender=current_app.config['MAIL_USERNAME'], recipients=[recipient])
     msg.body = body
     mail.send(msg)
 
+# Şifre sıfırlama e-postası
 def send_reset_email(user, token):
     mail = current_app.extensions.get('mail')
-    msg = Message('Şifre Değiştirme İsteği', sender=current_app.config['MAIL_USERNAME'], recipients=[user.email])
     reset_url = url_for('accounts.reset_password', token=token, _external=True)
-    msg.body = f"""Şifrenizi sıfırlamak için, alttaki linke tıklayınız:
-{reset_url}
-
-Bu talepte bulunmadıysanız, bu e-postayı görmezden gelin. Hiçbir değişiklik yapılmayacaktır"""
+    msg = Message('Şifre Değiştirme İsteği', sender=current_app.config['MAIL_USERNAME'], recipients=[user.email])
+    msg.body = f"Şifrenizi sıfırlamak için, aşağıdaki linke tıklayın:\n{reset_url}\nBu talepte bulunmadıysanız, bu e-postayı görmezden gelin."
     mail.send(msg)
 
-
+# Oy kullanma bağlantısı içeren e-posta
 def send_vote_link(user, token, election):
     app = current_app._get_current_object()
     mail = app.extensions.get('mail')
-    msg = Message(f'{election.title} için Oy Kullanma Linkiniz',
-                  sender=app.config['MAIL_USERNAME'],
-                  recipients=[user.email])
     link = url_for('core.vote', token=token, _external=True)
-    msg.body = f'Sayın {user.name.capitalize()} {user.surname.capitalize()},\n{election.title} seçimi için {election.start_date.strftime("%d-%m-%Y %H:%M")} tarihinden {election.end_date.strftime("%d-%m-%Y %H:%M")} tarihine kadar oy kullanabilirsiniz.\nOy kullanmak için aşağıdaki linke tıklayınız:\n{link}'
-    
+    msg = Message(f'{election.title} için Oy Kullanma Linkiniz', sender=app.config['MAIL_USERNAME'], recipients=[user.email])
+    msg.body = f"Sayın {user.name.capitalize()} {user.surname.capitalize()},\n\n{election.title} seçimi için oy kullanabilirsiniz. Aşağıdaki linke tıklayarak oy kullanın:\n{link}"
     thread = Thread(target=send_async_email, args=(app, msg))
     thread.daemon = True
     thread.start()
 
-def send_async_email(app, msg):
-    with app.app_context():
-        mail = app.extensions.get('mail')
-        try:
-            mail.send(msg)
-            logging.info("Mail sent successfully to %s", msg.recipients)
-        except Exception as e:
-            logging.error("Failed to send mail to %s: %s", msg.recipients, str(e))
-
-
+# E-posta güncelleme e-postası
 def send_update_email(new_mail, token):
     mail = current_app.extensions.get('mail')
-    msg = Message('Email Adresinizi Güncelleyin', sender=current_app.config['MAIL_USERNAME'], recipients=[new_mail])
     update_url = url_for('accounts.update_mail', token=token, _external=True)
-    msg.body = f"E-posta adresinizi güncellemek için lütfen aşağıdaki bağlantıyı ziyaret edin:\n{update_url}\n\nBu e-posta değişikliğini talep etmediyseniz, lütfen bu e-postayı dikkate almayın ve hiçbir değişiklik yapılmayacaktır."
-
+    msg = Message('E-posta Adresinizi Güncelleyin', sender=current_app.config['MAIL_USERNAME'], recipients=[new_mail])
+    msg.body = f"E-posta adresinizi güncellemek için lütfen aşağıdaki bağlantıya tıklayın:\n{update_url}\nEğer bu işlemi siz yapmadıysanız, bu e-postayı dikkate almayın."
     mail.send(msg)
 
-
+# E-posta doğrulama e-postası
 def send_verify_email(user, token):
     mail = current_app.extensions.get('mail')
-    msg = Message('E-posta Adresinizi Doğrulayın',
-                  sender=current_app.config['MAIL_USERNAME'],
-                  recipients=[user.email])
     verify_url = url_for('accounts.verify_email', token=token, _external=True)
-    
-    msg.body = (
-        f'Kayıt olduğunuz için teşekkür ederiz! Lütfen e-posta adresinizi doğrulamak için aşağıdaki bağlantıya tıklayın:\n'
-        f'{verify_url}\n\n'
-        'Eğer bu işlemi siz yapmadıysanız, lütfen bu e-postayı görmezden gelin.'
-    )    
+    msg = Message('E-posta Adresinizi Doğrulayın', sender=current_app.config['MAIL_USERNAME'], recipients=[user.email])
+    msg.body = f"Kayıt olduğunuz için teşekkür ederiz! E-posta adresinizi doğrulamak için aşağıdaki bağlantıya tıklayın:\n{verify_url}\nEğer bu işlemi siz yapmadıysanız, lütfen bu e-postayı dikkate almayın."
     mail.send(msg)
+
+# Seçim sonuçlarını içeren e-posta
+def send_results_email(election):
+    app = current_app._get_current_object()
+    mail = app.extensions.get('mail')
+    votetokens = VoteToken.query.filter_by(election_id=election.id).all()
+
+    for token in votetokens:
+        voter = Voter.query.get(token.voter_id)
+        if voter:
+            try:
+                encrypted_election_id = encrypt_id(token.election_id)
+                results_url = url_for('core.election_results', encrypted_election_id=encrypted_election_id, _external=True)
+                
+                msg = Message(f"{election.title} Sonuçları", sender=app.config['MAIL_USERNAME'], recipients=[voter.email])
+                msg.body = f"Merhaba {voter.name.capitalize()} {voter.surname.capitalize()},\n\n{election.title} seçim sonuçları açıklandı. Aşağıdaki linke tıklayarak sonuçları görüntüleyebilirsiniz:\n{results_url}\nİyi günler dileriz!"
+                
+                thread = Thread(target=send_async_email, args=(app, msg))
+                thread.daemon = True
+                thread.start()
+
+            except Exception as e:
+                logging.error(f"Sonuç e-postası {voter.email} adresine gönderilemedi: {str(e)}")
+
+# Asenkron e-posta gönderme işlemi
+def send_async_email(app, msg):
+    with app.app_context():
+        try:
+            mail = app.extensions.get('mail')
+            mail.send(msg)
+            logging.info(f"E-posta {msg.recipients[0]} adresine başarıyla gönderildi.")
+        except Exception as e:
+            logging.error(f"E-posta gönderilemedi: {str(e)}")
