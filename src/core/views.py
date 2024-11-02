@@ -1,12 +1,16 @@
 from datetime import datetime
 from collections import defaultdict
+from werkzeug.utils import secure_filename
+import face_recognition
+import os
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
-from src.accounts.models import db, Election, Voter, Option, Votes, VoteToken, OptionCount
+from src.accounts.models import db, Election, Voter, Option, Votes, VoteToken, OptionCount, FaceRecognition
 from src.utils.email_utils import send_vote_link
 from src.utils.email_validator import validate_email_address, EmailNotValidError
 from src.utils.vote_token_utils import create_vote_token_entry
 from src.utils.encrypt_election_id import encrypt_id, decrypt_id
+from src.utils.face_recognition import get_face_encoding, save_face_encoding
 
 
 core_bp = Blueprint("core", __name__)
@@ -119,26 +123,43 @@ def base():
 
 
 
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+from flask import flash, redirect, url_for, render_template
+from flask_login import current_user, login_required
+from src import db
+from src.accounts.models import Election, Option, Voter, FaceRecognition
+from src.utils.face_recognition import get_face_encoding, save_face_encoding
+from werkzeug.utils import secure_filename
+import os
+import numpy as np
+from collections import defaultdict
+
 @core_bp.route("/create_election", methods=['GET', 'POST'])
 @login_required
 def create_election():
-
     if request.method == 'POST':
         title = request.form.get('title')
         description = request.form.get('description')
         start_date = request.form.get('startDate')
         end_date = request.form.get('endDate')
-        options = request.form.getlist('options')  
+        options = request.form.getlist('options')
         voter_tcs = request.form.getlist('voterTc[]')
         voter_names = request.form.getlist('voterName[]')
         voter_surnames = request.form.getlist('voterSurname[]')
         voter_emails = request.form.getlist('voterEmail[]')
+        voter_photos = request.files.getlist('voterPhoto[]')
+
+        # E-posta ve TC doğrulama
         voter_data = zip(voter_tcs, voter_emails)
         email_to_tc = defaultdict(set)
         error = False
         for tc, email in voter_data:
             valid_email = validate_email_address(email)
-            if valid_email is None:  
+            if valid_email is None:
                 flash(f'Geçersiz e-posta adresi: {email}', 'warning')
                 error = True
                 break
@@ -150,6 +171,8 @@ def create_election():
 
         if error:
             return redirect(url_for('core.create_election', _external=True))
+
+        # Aynı TC'ye sahip seçmenlerin verilerini kontrol et
         voter_expanded_data = zip(voter_tcs, voter_names, voter_surnames, voter_emails)
         for tc, name, surname, email in voter_expanded_data:
             for other_tc, other_name, other_surname, other_email in voter_expanded_data:
@@ -159,11 +182,11 @@ def create_election():
                     break
             if error:
                 break
+
         if error:
             return redirect(url_for('core.create_election', _external=True))
 
-
-
+        # Oylama kaydını oluştur
         election = Election(
             title=title,
             description=description,
@@ -174,25 +197,67 @@ def create_election():
         db.session.add(election)
         db.session.commit()
 
+        # Seçenekleri ekle
         for option_desc in options:
             option = Option(description=option_desc, election_id=election.id)
             db.session.add(option)
-        
 
-        for tc, name, surname, email in zip(voter_tcs, voter_names, voter_surnames, voter_emails):
+        # Encoding'leri karşılaştırmak için bir liste
+        face_encodings_list = []
+        tc_face_map = {}
+
+        # Seçmenleri ekle ve yüz tanıma verilerini kaydet
+        for tc, name, surname, email, photo in zip(voter_tcs, voter_names, voter_surnames, voter_emails, voter_photos):
+            if photo and allowed_file(photo.filename):
+                filename = secure_filename(photo.filename)
+                image_path = os.path.join("uploads", filename)
+                photo.save(image_path)
+                face_encoding = get_face_encoding(image_path)
+
+                if face_encoding is not None and face_encoding.size > 0:
+                    for existing_encoding, existing_tc in face_encodings_list:
+                        match = face_recognition.compare_faces([existing_encoding], face_encoding, tolerance=0.6)
+
+                        if match[0] and existing_tc != tc:
+                            flash(f"Yüz verisi başka bir seçmenle eşleşiyor: {tc}-{existing_tc}", "warning")
+                            error = True
+                            break
+
+                    if error:
+                        break
+
+                    # Yeni yüz verisini ekle
+                    face_encodings_list.append((face_encoding, tc))
+                    tc_face_map[tc] = face_encoding  # TC ile face_encoding eşleştir
+
+            # Seçmen kayıt veya güncelleme
             voter = Voter.query.filter_by(tc=tc).first()
-            if voter:   
+            if voter:
+                # Mevcut seçmen için yüz encoding'i güncelle
                 voter.name = name
                 voter.surname = surname
                 voter.email = email
+                if face_encoding is not None:
+                    if voter.face_id:
+                        face_recognition_entry = FaceRecognition.query.get(voter.face_id)
+                        face_recognition_entry.encoding = face_encoding  # Encoding'i güncelle
+                    else:
+                        # Eğer face_id yoksa yeni bir FaceRecognition kaydı oluştur
+                        face_id = save_face_encoding(face_encoding)
+                        voter.face_id = face_id
             else:
-                voter = Voter(tc=tc, name=name, surname=surname, email=email)
+                face_id = save_face_encoding(face_encoding) if face_encoding is not None else None
+                voter = Voter(tc=tc, name=name, surname=surname, email=email, face_id=face_id)
                 db.session.add(voter)
+
             db.session.commit()
             token = create_vote_token_entry(voter.id, election.id)
             send_vote_link(voter, token, election)
 
+        if error:
+            return redirect(url_for('core.create_election', _external=True))
+
         flash('Oylama başarıyla oluşturuldu!', "success")
         return redirect(url_for("core.my_elections", _external=True))
-        
+
     return render_template("core/index.html")

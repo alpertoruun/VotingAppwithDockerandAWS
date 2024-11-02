@@ -7,7 +7,7 @@
       <!-- Formu kapsayan ana kart -->
       <div class="card shadow">
         <div class="card-body">
-          <h2 class="text-center mb-4">Oylama Bilgileri</h2> <!-- Başlık kart içerisine alındı -->
+          <h2 class="text-center mb-4">Oylama Bilgileri</h2>
           <form id="createElectionForm" action="{{ url_for('core.create_election') }}" method="post" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
@@ -61,7 +61,7 @@
           </form>
         </div>
 
-        <!-- Oylama Oluştur Butonu form dışına ve kart altına taşındı -->
+        <!-- Oylama Oluştur Butonu -->
         <div class="card-footer text-right">
           <button type="submit" form="createElectionForm" class="btn btn-primary">Oylama Oluştur</button>
         </div>
@@ -69,34 +69,30 @@
     </div>
   </div>
 </div>
+
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     addOption();
     addOption();
     addVoter();
     addVoter();
-  
-    updateOptionButtons();
-    updateVoterButtons();
-  
+
     // Tarih işlevselliği
     var startDateElement = document.getElementById('startDate');
     var endDateElement = document.getElementById('endDate');
     var now = new Date();
     now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
     var today = now.toISOString().slice(0, 16);
-  
+
     startDateElement.setAttribute('min', today);
     startDateElement.addEventListener('change', function() {
-      // Bitiş tarihi için en erken seçilebilecek zamanı başlangıç zamanından sonraya ayarla
       endDateElement.setAttribute('min', startDateElement.value);
-      // Eğer başlangıç tarihi zaten bitiş tarihinden sonra ise, bitiş tarihini sıfırla
       if (startDateElement.value > endDateElement.value) {
         endDateElement.value = startDateElement.value;
       }
     });
-  
-    // Seçenek ve seçmen ekleme fonksiyonları
+
+    // Seçenek ekleme ve kaldırma fonksiyonları
     function addOption() {
       var optionsContainer = document.getElementById('optionsContainer');
       var newOptionEntry = document.createElement('div');
@@ -104,86 +100,61 @@
       newOptionEntry.innerHTML = `
         <input type="text" class="form-control" name="options" required>
         <button class="btn btn-outline-secondary removeOption" type="button">−</button>
-      `;  
+      `;
       optionsContainer.appendChild(newOptionEntry);
-      updateOptionButtons(); // Butonları güncelle ekleme sonrası
+      updateOptionButtons();
     }
-    
+
     function updateOptionButtons() {
       var removeButtons = document.querySelectorAll('.removeOption');
-      if (removeButtons.length >= 2) {
-        removeButtons.forEach((button, index) => {
-          button.style.visibility = (index < 2) ? 'hidden' : 'visible'; // İlk iki butonu gizle
-        });
-      }
+      removeButtons.forEach((button) => {
+        button.style.display = removeButtons.length > 2 ? 'inline' : 'none';
+      });
     }
-  
+
+    // Seçmen ekleme ve kaldırma fonksiyonları
     function addVoter() {
-      var votersContainer = document.getElementById('votersContainer');
-      var newVoterEntry = document.createElement('div');
-      newVoterEntry.classList.add('input-group', 'mb-3');
-      newVoterEntry.innerHTML = `
-        <input type="text " class="form-control voter-tc" name="voterTc[]" placeholder="Tc kimlik No" required>
-        <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
-        <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
-        <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>
-        <button class="btn btn-outline-secondary removeVoter" type="button">−</button>
-      `;
-      votersContainer.appendChild(newVoterEntry);
-      updateVoterButtons(); // Butonları güncelle ekleme sonrası
-      addTcNoValidation();
-    }
-    
-    function updateVoterButtons() {
-      var removeButtons = document.querySelectorAll('.removeVoter');
-      if (removeButtons.length >= 2) {
-        removeButtons.forEach((button, index) => {
-          button.style.visibility = (index < 2) ? 'hidden' : 'visible'; // İlk iki butonu gizle
-        });
-      }
-    }
+  var votersContainer = document.getElementById('votersContainer');
+  var newVoterEntry = document.createElement('div');
+  newVoterEntry.classList.add('input-group', 'mb-3');
+  newVoterEntry.innerHTML = `
+    <input type="text" class="form-control voter-tc" name="voterTc[]" placeholder="Tc kimlik No" required>
+    <input type="text" class="form-control" name="voterName[]" placeholder="Ad" required>
+    <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" required>
+    <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" required>
+    <input type="file" class="form-control" name="voterPhoto[]" accept="image/*" required>
+    <button class="btn btn-outline-secondary removeVoter" type="button">−</button>
+  `;
+  votersContainer.appendChild(newVoterEntry);
+  updateVoterButtons();
+}
 
-    function fillEmptyVoterFields(tc, name, surname, email) {
-      var voterEntries = document.querySelectorAll('#votersContainer .input-group');
-      for (var i = 0; i < voterEntries.length; i++) {
-        var tcField = voterEntries[i].querySelector('input[name="voterTc[]"]');
-        var nameField = voterEntries[i].querySelector('input[name="voterName[]"]');
-        var surnameField = voterEntries[i].querySelector('input[name="voterSurname[]"]');
-        var emailField = voterEntries[i].querySelector('input[name="voterEmail[]"]');
-        
-        if (!tcField.value && !nameField.value && !surnameField.value && !emailField.value) {
-          tcField.value = tc;
-          nameField.value = name;
-          surnameField.value = surname;
-          emailField.value = email;
-          return;
-        }
-      }
-      
-      // Eğer boş alan yoksa yeni bir seçmen ekle
-      addVoterFromCsv(tc, name, surname, email);
-    }
-
-    // Seçenek ve seçmen kaldırma işlevleri
+function updateVoterButtons() {
+  var removeButtons = document.querySelectorAll('.removeVoter');
+  removeButtons.forEach((button) => {
+    button.style.display = removeButtons.length > 2 ? 'inline' : 'none';
+  });
+}
+    // '-' butonları için olay dinleyicileri
     document.getElementById('optionsContainer').addEventListener('click', function(event) {
       if (event.target.classList.contains('removeOption')) {
-        var optionEntry = event.target.closest('.input-group');
-        optionEntry.remove();
+        event.target.closest('.input-group').remove();
+        updateOptionButtons();
       }
     });
-  
+
     document.getElementById('votersContainer').addEventListener('click', function(event) {
       if (event.target.classList.contains('removeVoter')) {
-        var voterEntry = event.target.closest('.input-group');
-        voterEntry.remove();
+        event.target.closest('.input-group').remove();
+        updateVoterButtons();
       }
     });
-  
+
     // '+' butonlarının olay dinleyicileri
     document.querySelector('.addOption').addEventListener('click', addOption);
     document.querySelector('.addVoter').addEventListener('click', function() {
       addVoter();
-      updateVoterButtons(); // Butonları güncelle her ekleme sonrası
+      updateVoterButtons();
     });
 
     // Form gönderme işlevselliği
@@ -194,12 +165,11 @@
       }
     });
 
-    // CSV Yükleme Butonu Olay Dinleyicisi
+    // CSV Yükleme Butonu ve Olay Dinleyicisi
     document.getElementById('uploadCsvBtn').addEventListener('click', function() {
       document.getElementById('csvFile').click();
     });
 
-    // CSV Dosyası Yükleme ve Okuma
     document.getElementById('csvFile').addEventListener('change', function(event) {
       const file = event.target.files[0];
       if (file && file.type === 'text/csv') {
@@ -220,6 +190,25 @@
       }
     });
 
+    function fillEmptyVoterFields(tc, name, surname, email) {
+      var voterEntries = document.querySelectorAll('#votersContainer .input-group');
+      for (var i = 0; i < voterEntries.length; i++) {
+        var tcField = voterEntries[i].querySelector('input[name="voterTc[]"]');
+        var nameField = voterEntries[i].querySelector('input[name="voterName[]"]');
+        var surnameField = voterEntries[i].querySelector('input[name="voterSurname[]"]');
+        var emailField = voterEntries[i].querySelector('input[name="voterEmail[]"]');
+        
+        if (!tcField.value && !nameField.value && !surnameField.value && !emailField.value) {
+          tcField.value = tc;
+          nameField.value = name;
+          surnameField.value = surname;
+          emailField.value = email;
+          return;
+        }
+      }
+      addVoterFromCsv(tc, name, surname, email);
+    }
+
     function addVoterFromCsv(tc, name, surname, email) {
       var votersContainer = document.getElementById('votersContainer');
       var newVoterEntry = document.createElement('div');
@@ -229,6 +218,7 @@
         <input type="text" class="form-control" name="voterName[]" value="${name}" placeholder="Ad" required>
         <input type="text" class="form-control" name="voterSurname[]" value="${surname}" placeholder="Soyad" required>
         <input type="email" class="form-control" name="voterEmail[]" value="${email}" placeholder="E-posta" required>
+        <input type="file" class="form-control" name="voterPhoto[]" accept="image/*" required>
         <button class="btn btn-outline-secondary removeVoter" type="button">−</button>
       `;
       votersContainer.appendChild(newVoterEntry);
@@ -243,16 +233,10 @@
         tcField.addEventListener('input', function() {
           var value = this.value;
           var isValid = /^\d{11}$/.test(value);
-          if (!isValid) {
-            this.setCustomValidity('TC kimlik numarası 11 haneli olmalıdır.');
-          } else {
-            this.setCustomValidity('');
-          }
+          this.setCustomValidity(isValid ? '' : 'TC kimlik numarası 11 haneli olmalıdır.');
         });
       });
     }
-
-    // İlk TC Kimlik No validasyonları ekleyin
     addTcNoValidation();
   });
 </script>

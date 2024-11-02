@@ -32,7 +32,19 @@ class Voter(db.Model):
     name = db.Column(db.String(50), nullable=False)
     surname = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(100), nullable=False)
-    face_recognitions = db.relationship('FaceRecognition', backref='voter', lazy=True)
+    face_id = db.Column(db.Integer, db.ForeignKey('face_recognition.id'), nullable=True)
+
+    face_recognition = db.relationship(
+        'FaceRecognition', 
+        backref=db.backref('voter', lazy=True),
+        foreign_keys=[face_id]
+    )
+
+
+class FaceRecognition(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    encoding = db.Column(db.LargeBinary, nullable=False)
+
 
 class Election(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -65,11 +77,6 @@ class OptionCount(db.Model):
     election_id = db.Column(db.Integer, db.ForeignKey('election.id'), nullable=False)
     option_id = db.Column(db.Integer, db.ForeignKey('option.id'), nullable=False)
     vote_count = db.Column(db.Integer, default=0)
-
-class FaceRecognition(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    voter_id = db.Column(db.Integer, db.ForeignKey('voter.id'), nullable=False)
-    encoding = db.Column(db.LargeBinary, nullable=False)  
 
 class VoteToken(db.Model):
     id = db.Column(db.Integer, primary_key=True)
