@@ -21,15 +21,29 @@ def send_reset_email(user, token):
     mail.send(msg)
 
 # Oy kullanma bağlantısı içeren e-posta
-def send_vote_link(user, token, election):
+def send_vote_link(voter, token, election):
     app = current_app._get_current_object()
     mail = app.extensions.get('mail')
-    link = url_for('core.vote', token=token, _external=True)
-    msg = Message(f'{election.title} için Oy Kullanma Linkiniz', sender=app.config['MAIL_USERNAME'], recipients=[user.email])
-    msg.body = f"Sayın {user.name.capitalize()} {user.surname.capitalize()},\n\n{election.title} seçimi için oy kullanabilirsiniz. Aşağıdaki linke tıklayarak oy kullanın:\n{link}"
+    
+    # Yüz doğrulama rotasına yönlendiren link
+    face_control_link = url_for('core.face_control', token=token, _external=True)
+    
+    # E-posta mesajı
+    msg = Message(
+        f'{election.title} için Yüz Doğrulama Linkiniz', 
+        sender=app.config['MAIL_USERNAME'], 
+        recipients=[voter.email]
+    )
+    msg.body = (
+        f"Sayın {voter.name.capitalize()} {voter.surname.capitalize()},\n\n"
+        f"{election.title} seçimi için yüz doğrulamasından geçmeniz gerekmektedir. "
+        f"Aşağıdaki linke tıklayarak yüz doğrulamanızı gerçekleştirin ve oy kullanma sayfasına yönlendirilin:\n{face_control_link}"
+    )
+
     thread = Thread(target=send_async_email, args=(app, msg))
     thread.daemon = True
     thread.start()
+
 
 # E-posta güncelleme e-postası
 def send_update_email(new_mail, token):

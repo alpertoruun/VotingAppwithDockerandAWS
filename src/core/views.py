@@ -2,6 +2,7 @@ from datetime import datetime
 from collections import defaultdict
 from werkzeug.utils import secure_filename
 import face_recognition
+import cv2
 import os
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
@@ -78,6 +79,44 @@ def election_results(encrypted_election_id):
     participation_rate = election.participation_rate
 
     return render_template('core/results.html', election=election, results=results, participation_rate=participation_rate)
+
+
+from flask import jsonify, request
+
+@core_bp.route('/face_control/<token>', methods=['GET', 'POST'])
+def face_control(token):
+    if request.method == 'POST':
+        vote_token = VoteToken.query.filter_by(token=token, used=False).first()
+        if not vote_token:
+            return jsonify({"success": False, "message": "Geçersiz token."}), 400
+
+        voter = Voter.query.get(vote_token.voter_id)
+        face_record = FaceRecognition.query.get(voter.face_id)
+
+        if not face_record:
+            return jsonify({"success": False, "message": "Yüz verisi bulunamadı."}), 400
+
+        # Yüklenen resmi al
+        image_file = request.files.get('image')
+        if not image_file:
+            return jsonify({"success": False, "message": "Görüntü yüklenemedi."}), 400
+
+        # Yüz tanıma işlemini başlat
+        input_image = face_recognition.load_image_file(image_file)
+        input_encoding = face_recognition.face_encodings(input_image)
+
+        if len(input_encoding) == 0:
+            return jsonify({"success": False, "message": "Yüz algılanamadı."}), 400
+
+        known_encoding = np.frombuffer(face_record.encoding)
+        match = face_recognition.compare_faces([known_encoding], input_encoding[0])
+
+        if match[0]:
+            return jsonify({"success": True, "message": "Yüz doğrulama başarılı!"}), 200
+        else:
+            return jsonify({"success": False, "message": "Yüz doğrulama başarısız!"}), 400
+
+    return render_template('core/face_control.html', token=token)
 
 
 

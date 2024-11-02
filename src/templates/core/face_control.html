@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Control</title>
+</head>
+<body>
+    <h2>Yüz Tanıma Doğrulaması</h2>
+    <video id="video" width="640" height="480" autoplay></video>
+    <button id="captureButton">Fotoğraf Çek</button>
+
+    <script>
+        // Kameraya erişim izni iste
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                const video = document.getElementById('video');
+                video.srcObject = stream;
+            })
+            .catch(error => {
+                console.error("Kameraya erişim izni reddedildi:", error);
+                alert("Kameraya erişim izni gerekli!");
+            });
+
+        // Fotoğraf çekme ve sunucuya gönderme
+        document.getElementById('captureButton').addEventListener('click', () => {
+            const video = document.getElementById('video');
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+
+            canvas.toBlob(blob => {
+                const formData = new FormData();
+                formData.append('image', blob, 'photo.jpg');
+
+                fetch('{{ url_for("core.face_control", token=token) }}', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Yüz doğrulama başarılı! Oy kullanma ekranına yönlendiriliyorsunuz.");
+                        window.location.href = '{{ url_for("core.vote", token=token) }}';
+                    } else {
+                        alert("Yüz doğrulama başarısız!");
+                    }
+                })
+                .catch(error => {
+                    console.error("Yüz doğrulama hatası:", error);
+                    alert("Bir hata oluştu. Lütfen tekrar deneyin.");
+                });
+            }, 'image/jpeg');
+        });
+    </script>
+</body>
+</html>
