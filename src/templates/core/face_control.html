@@ -1,58 +1,74 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Face Control</title>
-</head>
-<body>
-    <h2>Yüz Tanıma Doğrulaması</h2>
-    <video id="video" width="640" height="480" autoplay></video>
-    <button id="captureButton">Fotoğraf Çek</button>
+{% extends "_base.html" %}
 
-    <script>
-        // Kameraya erişim izni iste
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then(stream => {
-                const video = document.getElementById('video');
-                video.srcObject = stream;
-            })
-            .catch(error => {
-                console.error("Kameraya erişim izni reddedildi:", error);
-                alert("Kameraya erişim izni gerekli!");
-            });
+{% block content %}
+<div class="container mt-4">
+  <div class="row">
+    <div class="col">
+      <div class="card shadow">
+        <div class="card-body text-center">
+          <h2 class="mb-4">Yüz Doğrulama</h2>
+          <video id="video" autoplay playsinline class="border rounded" width="320" height="240"></video>
+          <canvas id="canvas" style="display: none;"></canvas>
+          <div class="mt-3">
+            <button id="captureButton" class="btn btn-primary">Fotoğraf Çek</button>
+          </div>
+          <form id="faceControlForm" action="{{ url_for('core.face_control', token=token) }}" method="post" enctype="multipart/form-data" style="display: none;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="file" id="imageInput" name="image" accept="image/*">
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-        // Fotoğraf çekme ve sunucuya gönderme
-        document.getElementById('captureButton').addEventListener('click', () => {
-            const video = document.getElementById('video');
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
+<script>
+  const video = document.getElementById('video');
+  const canvas = document.getElementById('canvas');
+  const captureButton = document.getElementById('captureButton');
+  const faceControlForm = document.getElementById('faceControlForm');
+  const imageInput = document.getElementById('imageInput');
 
-            canvas.toBlob(blob => {
-                const formData = new FormData();
-                formData.append('image', blob, 'photo.jpg');
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+      video.srcObject = stream;
+    })
+    .catch(error => {
+      console.error("Kameraya erişim sağlanamadı:", error);
+      alert("Kameraya erişim sağlanamadı.");
+    });
 
-                fetch('{{ url_for("core.face_control", token=token) }}', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert("Yüz doğrulama başarılı! Oy kullanma ekranına yönlendiriliyorsunuz.");
-                        window.location.href = '{{ url_for("core.vote", token=token) }}';
-                    } else {
-                        alert("Yüz doğrulama başarısız!");
-                    }
-                })
-                .catch(error => {
-                    console.error("Yüz doğrulama hatası:", error);
-                    alert("Bir hata oluştu. Lütfen tekrar deneyin.");
-                });
-            }, 'image/jpeg');
-        });
-    </script>
-</body>
-</html>
+  captureButton.addEventListener('click', () => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext('2d');
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    canvas.toBlob(blob => {
+      const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      imageInput.files = dataTransfer.files;
+
+      const formData = new FormData(faceControlForm);
+
+      fetch(faceControlForm.action, {
+        method: "POST",
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          window.location.href = data.redirect_url;
+        } else {
+          alert("Yüz doğrulama başarısız. Lütfen tekrar deneyin.");
+        }
+      })
+      .catch(error => {
+        console.error("Yüz doğrulama hatası:", error);
+        alert("Bir hata oluştu. Lütfen tekrar deneyin.");
+      });
+    }, 'image/jpeg');
+  });
+</script>
+{% endblock %}

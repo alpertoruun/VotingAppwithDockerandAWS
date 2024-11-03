@@ -3,6 +3,7 @@ from collections import defaultdict
 from werkzeug.utils import secure_filename
 import face_recognition
 import cv2
+import logging
 import os
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
@@ -96,12 +97,10 @@ def face_control(token):
         if not face_record:
             return jsonify({"success": False, "message": "Yüz verisi bulunamadı."}), 400
 
-        # Yüklenen resmi al
         image_file = request.files.get('image')
         if not image_file:
             return jsonify({"success": False, "message": "Görüntü yüklenemedi."}), 400
 
-        # Yüz tanıma işlemini başlat
         input_image = face_recognition.load_image_file(image_file)
         input_encoding = face_recognition.face_encodings(input_image)
 
@@ -112,48 +111,54 @@ def face_control(token):
         match = face_recognition.compare_faces([known_encoding], input_encoding[0])
 
         if match[0]:
-            return jsonify({"success": True, "message": "Yüz doğrulama başarılı!"}), 200
+            encrypted_token = encrypt_id(token)
+            logging.info(f"Yüz doğrulama başarılı, şifrelenmiş token: {encrypted_token}")  # Log ekledik
+            return jsonify({
+                "success": True,
+                "message": "Yüz doğrulama başarılı!",
+                "redirect_url": url_for("core.vote", encrypted_token=encrypted_token, _external=True)
+            }), 200
         else:
             return jsonify({"success": False, "message": "Yüz doğrulama başarısız!"}), 400
 
     return render_template('core/face_control.html', token=token)
 
 
+@core_bp.route('/vote/<encrypted_token>', methods=['GET', 'POST'])
+def vote(encrypted_token):
+    original_token = decrypt_id(encrypted_token)
+    if original_token is None:
+        flash("Token geçersiz veya bozulmuş. Lütfen geçerli bir link kullanın.", "danger")
+        return redirect(url_for("core.create_election"))
 
-@core_bp.route('/vote/<token>', methods=['GET', 'POST'])
-def vote(token):
-    vote_token = VoteToken.query.filter_by(token=token, used=False).first()
+    # Token geçerliyse, ilgili VoteToken ve Election kayıtlarını al
+    vote_token = VoteToken.query.filter_by(token=original_token, used=False).first()
     if not vote_token:
-        flash('Geçersiz veya kullanılmış token.', 'danger')
-        return render_template("errors/404.html")
+        flash("Bu token ile oy kullanılamaz veya zaten kullanılmış.", "danger")
+        return redirect(url_for("core.create_election"))
 
     election = Election.query.get(vote_token.election_id)
-    voter = Voter.query.get(vote_token.voter_id)  
+    if not election:
+        flash("İlgili seçim bilgisi bulunamadı.", "danger")
+        return redirect(url_for("core.create_election"))
+
+    # Seçenekleri (options) alıyoruz
     options = Option.query.filter_by(election_id=election.id).all()
-    now = datetime.now()
+    voter = Voter.query.filter_by(id=vote_token.voter_id).first()
 
-    if not (election.start_date <= now <= election.end_date):
-        flash('Bu oylama için oy verme süresi geçmiş veya henüz başlamamış.', 'warning')
-        return render_template("errors/404.html")
-    
     if request.method == 'POST':
-        selected_option_id = request.form.get('option')
-        if selected_option_id:
-            new_vote = Votes(
-                voter_id=vote_token.voter_id,
-                election_id=election.id,
-                option_id=selected_option_id,
-                timestamp=db.func.current_timestamp()  
-            )
-            db.session.add(new_vote)            
-            vote_token.used = True
-            db.session.commit()
-            
-            flash('Oyunuz kaydedildi!', 'success')
-            encrypted_election_id = encrypt_id(election.id)
-            return render_template('core/vote_confirmation.html', election=election, voter=voter)
+        vote_token.used = True
+        db.session.commit()
+        flash("Oyunuz başarıyla kaydedildi!", "success")
+        return render_template("core/vote_confirmation.html", voter=voter)
 
-    return render_template('core/vote.html', election=election, options=options)
+    # Oy kullanma sayfası render ediliyor
+    return render_template("core/vote.html", encrypted_token=encrypted_token, election=election, options=options)
+
+
+
+
+
 
 @core_bp.route('/')
 @login_required
