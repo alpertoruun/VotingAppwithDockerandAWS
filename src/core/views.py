@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 from werkzeug.utils import secure_filename
 import face_recognition
@@ -105,11 +105,30 @@ from flask import jsonify, request
 
 @core_bp.route('/face_control/<token>', methods=['GET', 'POST'])
 def face_control(token):
-    if request.method == 'POST':
-        vote_token = VoteToken.query.filter_by(token=token, used=False).first()
-        if not vote_token:
-            return jsonify({"success": False, "message": "Geçersiz token."}), 400
+    # Tokenin geçerliliğini kontrol et
+    vote_token = VoteToken.query.filter_by(token=token, used=False).first()
+    if not vote_token:
+        return jsonify({"success": False, "message": "Geçersiz veya kullanılmış token."}), 400
 
+    # Seçim tarihlerini kontrol et
+    election = Election.query.get(vote_token.election_id)
+
+
+    current_time = datetime.utcnow() + timedelta(hours=3)
+
+    start_date_naive = election.start_date.replace(tzinfo=None)
+    end_date_naive = election.end_date.replace(tzinfo=None)
+
+    # Zaman bilgilerini kontrol amaçlı yazdırıyoruz
+    print("Mevcut Zaman (Naive):", current_time)
+    print("Başlangıç Tarihi (Naive):", start_date_naive)
+    print("Bitiş Tarihi (Naive):", end_date_naive)
+    if current_time < election.start_date or current_time > election.end_date:
+        flash("Oylama saatleri dışındasınız.", "danger")
+        return redirect(url_for("core.create_election"))
+
+    # POST isteği olduğunda yüz tanıma işlemlerine geç
+    if request.method == 'POST':
         voter = Voter.query.get(vote_token.voter_id)
         face_record = FaceRecognition.query.get(voter.face_id)
 
@@ -141,7 +160,6 @@ def face_control(token):
             return jsonify({"success": False, "message": "Yüz doğrulama başarısız!"}), 400
 
     return render_template('core/face_control.html', token=token)
-
 
 
 @core_bp.route('/vote/<encrypted_token>', methods=['GET', 'POST'])
