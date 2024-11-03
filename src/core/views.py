@@ -116,39 +116,22 @@ def face_control(token):
         if not face_record:
             return jsonify({"success": False, "message": "Yüz verisi bulunamadı."}), 400
 
-        # 3 farklı yüz encodesi elde etmek için bir döngü başlatıyoruz
-        captured_encodings = []
-        capture_attempts = 3
-        delay_between_captures = 1.5  # saniye cinsinden
+        image_file = request.files.get('image')
+        if not image_file:
+            return jsonify({"success": False, "message": "Görüntü yüklenemedi."}), 400
 
-        for _ in range(capture_attempts):
-            image_file = request.files.get('image')
-            if not image_file:
-                return jsonify({"success": False, "message": "Görüntü yüklenemedi."}), 400
+        input_image = face_recognition.load_image_file(image_file)
+        input_encoding = face_recognition.face_encodings(input_image)
 
-            input_image = face_recognition.load_image_file(image_file)
-            input_encoding = face_recognition.face_encodings(input_image)
+        if len(input_encoding) == 0:
+            return jsonify({"success": False, "message": "Yüz algılanamadı."}), 400
 
-            if len(input_encoding) == 0:
-                return jsonify({"success": False, "message": "Yüz algılanamadı."}), 400
-
-            # İlk encodeden sonra benzerlik kontrolü yaparak listeye ekle
-            if all(not face_recognition.compare_faces([enc], input_encoding[0])[0] for enc in captured_encodings):
-                captured_encodings.append(input_encoding[0])
-
-            # Yeterli farklılık sağlanmadıysa, gecikme ile tekrar dene
-            if len(captured_encodings) < capture_attempts:
-                time.sleep(delay_between_captures)
-
-        # Eğer 3 farklı yüz encodesi sağlanamazsa doğrulama başarısız
-        if len(captured_encodings) < capture_attempts:
-            return jsonify({"success": False, "message": "Yeterli yüz farklılığı sağlanamadı."}), 400
-
-        # Üç farklı encodeden en az biri ile eşleşme kontrolü yap
         known_encoding = np.frombuffer(face_record.encoding)
-        if any(face_recognition.compare_faces([known_encoding], enc)[0] for enc in captured_encodings):
+        match = face_recognition.compare_faces([known_encoding], input_encoding[0])
+
+        # Eğer eşleşme varsa success olarak döndür, yoksa başarısız olarak işaretle
+        if match[0]:
             encrypted_token = encrypt_id(token)
-            logging.info(f"Yüz doğrulama başarılı, şifrelenmiş token: {encrypted_token}")
             return jsonify({
                 "success": True,
                 "message": "Yüz doğrulama başarılı!",
@@ -158,6 +141,7 @@ def face_control(token):
             return jsonify({"success": False, "message": "Yüz doğrulama başarısız!"}), 400
 
     return render_template('core/face_control.html', token=token)
+
 
 
 @core_bp.route('/vote/<encrypted_token>', methods=['GET', 'POST'])

@@ -9,9 +9,6 @@
           <h2 class="mb-4">Yüz Doğrulama</h2>
           <video id="video" autoplay playsinline class="border rounded" width="320" height="240"></video>
           <canvas id="canvas" style="display: none;"></canvas>
-          <div class="mt-3">
-            <button id="captureButton" class="btn btn-primary">Fotoğraf Çek</button>
-          </div>
           <form id="faceControlForm" action="{{ url_for('core.face_control', token=token) }}" method="post" enctype="multipart/form-data" style="display: none;">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="file" id="imageInput" name="image" accept="image/*">
@@ -25,33 +22,46 @@
 <script>
   const video = document.getElementById('video');
   const canvas = document.getElementById('canvas');
-  const captureButton = document.getElementById('captureButton');
   const faceControlForm = document.getElementById('faceControlForm');
   const imageInput = document.getElementById('imageInput');
+  let captureCount = 0;
+  const maxCaptures = 3;
+  let matches = 0;
 
   navigator.mediaDevices.getUserMedia({ video: true })
     .then(stream => {
       video.srcObject = stream;
+      startCapturing();
     })
     .catch(error => {
       console.error("Kameraya erişim sağlanamadı:", error);
       alert("Kameraya erişim sağlanamadı.");
     });
 
-  captureButton.addEventListener('click', () => {
+  function startCapturing() {
+    const captureInterval = setInterval(() => {
+      if (captureCount < maxCaptures) {
+        captureImage();
+        captureCount++;
+      } else {
+        clearInterval(captureInterval);
+      }
+    }, 1500); // Her 1.5 saniyede bir fotoğraf çekme
+  }
+
+  function captureImage() {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const context = canvas.getContext('2d');
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     canvas.toBlob(blob => {
-      const file = new File([blob], "capture.jpg", { type: "image/jpeg" });
+      const file = new File([blob], `capture_${captureCount}.jpg`, { type: "image/jpeg" });
       const dataTransfer = new DataTransfer();
       dataTransfer.items.add(file);
       imageInput.files = dataTransfer.files;
 
       const formData = new FormData(faceControlForm);
-
       fetch(faceControlForm.action, {
         method: "POST",
         body: formData
@@ -59,9 +69,14 @@
       .then(response => response.json())
       .then(data => {
         if (data.success) {
-          window.location.href = data.redirect_url;
-        } else {
-          alert("Yüz doğrulama başarısız. Lütfen tekrar deneyin.");
+          matches++;
+        }
+        if (captureCount === maxCaptures) {
+          if (matches >= 2) {
+            window.location.href = data.redirect_url;
+          } else {
+            alert("Yüz doğrulama başarısız. Lütfen tekrar deneyin.");
+          }
         }
       })
       .catch(error => {
@@ -69,6 +84,6 @@
         alert("Bir hata oluştu. Lütfen tekrar deneyin.");
       });
     }, 'image/jpeg');
-  });
+  }
 </script>
 {% endblock %}
