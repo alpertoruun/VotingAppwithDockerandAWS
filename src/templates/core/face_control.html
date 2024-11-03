@@ -27,6 +27,7 @@
   let captureCount = 0;
   const maxCaptures = 3;
   let matches = 0;
+  let redirectUrl = null;  // Başarılı yönlendirme URL'si
 
   navigator.mediaDevices.getUserMedia({ video: true })
     .then(stream => {
@@ -39,14 +40,18 @@
     });
 
   function startCapturing() {
+    captureCount = 0;
+    matches = 0;
+    redirectUrl = null;  // Yönlendirme URL'sini sıfırlayın
     const captureInterval = setInterval(() => {
       if (captureCount < maxCaptures) {
         captureImage();
         captureCount++;
       } else {
         clearInterval(captureInterval);
+        evaluateResults();
       }
-    }, 1500); // Her 1.5 saniyede bir fotoğraf çekme
+    }, 1500);
   }
 
   function captureImage() {
@@ -62,6 +67,7 @@
       imageInput.files = dataTransfer.files;
 
       const formData = new FormData(faceControlForm);
+
       fetch(faceControlForm.action, {
         method: "POST",
         body: formData
@@ -70,20 +76,24 @@
       .then(data => {
         if (data.success) {
           matches++;
-        }
-        if (captureCount === maxCaptures) {
-          if (matches >= 2) {
-            window.location.href = data.redirect_url;
-          } else {
-            alert("Yüz doğrulama başarısız. Lütfen tekrar deneyin.");
+          if (!redirectUrl) {  // İlk başarılı eşleşmede yönlendirme URL'sini al
+            redirectUrl = data.redirect_url;
           }
         }
       })
       .catch(error => {
         console.error("Yüz doğrulama hatası:", error);
-        alert("Bir hata oluştu. Lütfen tekrar deneyin.");
       });
     }, 'image/jpeg');
+  }
+
+  function evaluateResults() {
+    if (matches >= 2 && redirectUrl) {
+      window.location.href = redirectUrl;
+    } else {
+      alert("Yüz doğrulama başarısız. Lütfen tekrar deneyin.");
+      setTimeout(startCapturing, 500);
+    }
   }
 </script>
 {% endblock %}
