@@ -63,26 +63,34 @@ def send_verify_email(user, token):
 
 # Seçim sonuçlarını içeren e-posta
 def send_results_email(election):
-    app = current_app._get_current_object()
-    mail = app.extensions.get('mail')
-    votetokens = VoteToken.query.filter_by(election_id=election.id).all()
+    with current_app.app_context():  # Bu satırı ekleyin
+        app = current_app._get_current_object()
+        mail = app.extensions.get('mail')
+        votetokens = VoteToken.query.filter_by(election_id=election.id).all()
 
-    for token in votetokens:
-        voter = Voter.query.get(token.voter_id)
-        if voter:
-            try:
-                encrypted_election_id = encrypt_id(token.election_id)
-                results_url = url_for('core.election_results', encrypted_election_id=encrypted_election_id, _external=True)
-                
-                msg = Message(f"{election.title} Sonuçları", sender=app.config['MAIL_USERNAME'], recipients=[voter.email])
-                msg.body = f"Merhaba {voter.name.capitalize()} {voter.surname.capitalize()},\n\n{election.title} seçim sonuçları açıklandı. Aşağıdaki linke tıklayarak sonuçları görüntüleyebilirsiniz:\n{results_url}\nİyi günler dileriz!"
-                
-                thread = Thread(target=send_async_email, args=(app, msg))
-                thread.daemon = True
-                thread.start()
+        for token in votetokens:
+            voter = Voter.query.get(token.voter_id)
+            if voter:
+                try:
+                    encrypted_election_id = encrypt_id(token.election_id)
+                    results_url = url_for('core.election_results', encrypted_election_id=encrypted_election_id, _external=True)
 
-            except Exception as e:
-                logging.error(f"Sonuç e-postası {voter.email} adresine gönderilemedi: {str(e)}")
+                    msg = Message(
+                        f"{election.title} Sonuçları",
+                        sender=app.config['MAIL_USERNAME'],
+                        recipients=[voter.email]
+                    )
+                    msg.body = f"Merhaba {voter.name.capitalize()} {voter.surname.capitalize()},\n\n" \
+                               f"{election.title} seçim sonuçları açıklandı. Aşağıdaki linke tıklayarak sonuçları görüntüleyebilirsiniz:\n{results_url}\n\n" \
+                               "İyi günler dileriz!"
+                    
+                    thread = Thread(target=send_async_email, args=(app, msg))
+                    thread.daemon = True
+                    thread.start()
+
+                except Exception as e:
+                    logging.error(f"Sonuç e-postası {voter.email} adresine gönderilemedi: {str(e)}")
+
 
 # Asenkron e-posta gönderme işlemi
 def send_async_email(app, msg):

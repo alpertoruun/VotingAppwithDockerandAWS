@@ -13,6 +13,9 @@ app = Flask(__name__)
 app.config.from_object(config("APP_SETTINGS"))
 mail = Mail(app)
 
+app.config['SERVER_NAME'] = config('SERVER_NAME')
+app.config['PREFERRED_URL_SCHEME'] = config('PREFERRED_URL_SCHEME')
+
 login_manager = LoginManager()
 login_manager.init_app(app)
 
