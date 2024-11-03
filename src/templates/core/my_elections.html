@@ -7,11 +7,36 @@
         <table class="table table-bordered table-hover">
             <thead class="thead-dark">
                 <tr>
-                    <th>Oylama İsmi</th>
-                    <th>Açıklama</th>
-                    <th>Oluşturulma Tarihi(dd/mm/yyyy)</th>
-                    <th>Başlangıç Tarihi(dd/mm/yyyy)</th>
-                    <th>Bitiş Tarihi(dd/mm/yyyy)</th>
+                    <th>Oylama İsmi
+                        <div class="sort-icons">
+                            <a href="{{ url_for('core.my_elections', sort_by='title', order='asc') }}">▲</a>
+                            <a href="{{ url_for('core.my_elections', sort_by='title', order='desc') }}">▼</a>
+                        </div>
+                    </th>
+                    <th>Açıklama
+                        <div class="sort-icons">
+                            <a href="{{ url_for('core.my_elections', sort_by='description', order='asc') }}">▲</a>
+                            <a href="{{ url_for('core.my_elections', sort_by='description', order='desc') }}">▼</a>
+                        </div>
+                    </th>
+                    <th>Oluşturulma Tarihi(dd/mm/yyyy)
+                        <div class="sort-icons">
+                            <a href="{{ url_for('core.my_elections', sort_by='created_at', order='asc') }}">▲</a>
+                            <a href="{{ url_for('core.my_elections', sort_by='created_at', order='desc') }}">▼</a>
+                        </div>
+                    </th>
+                    <th>Başlangıç Tarihi(dd/mm/yyyy)
+                        <div class="sort-icons">
+                            <a href="{{ url_for('core.my_elections', sort_by='start_date', order='asc') }}">▲</a>
+                            <a href="{{ url_for('core.my_elections', sort_by='start_date', order='desc') }}">▼</a>
+                        </div>
+                    </th>
+                    <th>Bitiş Tarihi(dd/mm/yyyy)
+                        <div class="sort-icons">
+                            <a href="{{ url_for('core.my_elections', sort_by='end_date', order='asc') }}">▲</a>
+                            <a href="{{ url_for('core.my_elections', sort_by='end_date', order='desc') }}">▼</a>
+                        </div>
+                    </th>
                     <th>Seçmenler</th>
                     <th>Sonuçlar</th>
                 </tr>
@@ -39,20 +64,40 @@
         <ul class="pagination justify-content-center">
             {% if pagination.has_prev %}
             <li class="page-item">
-                <a class="page-link" href="{{ url_for('core.my_elections', page=pagination.prev_num) }}">Önceki</a>
+                <a class="page-link" href="{{ url_for('core.my_elections', page=pagination.prev_num, sort_by=sort_by, order=order) }}">Önceki</a>
             </li>
             {% endif %}
             {% for page_num in pagination.iter_pages() %}
             <li class="page-item {{ 'active' if page_num == pagination.page else '' }}">
-                <a class="page-link" href="{{ url_for('core.my_elections', page=page_num) }}">{{ page_num }}</a>
+                <a class="page-link" href="{{ url_for('core.my_elections', page=page_num, sort_by=sort_by, order=order) }}">{{ page_num }}</a>
             </li>
             {% endfor %}
             {% if pagination.has_next %}
             <li class="page-item">
-                <a class="page-link" href="{{ url_for('core.my_elections', page=pagination.next_num) }}">Sonraki</a>
+                <a class="page-link" href="{{ url_for('core.my_elections', page=pagination.next_num, sort_by=sort_by, order=order) }}">Sonraki</a>
             </li>
             {% endif %}
         </ul>
     </nav>
 </div>
+
+<style>
+    th {
+        position: relative;
+    }
+    .sort-icons {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 50%;
+        right: 5px;
+        transform: translateY(-50%);
+    }
+    .sort-icons a {
+        font-size: 0.6em;
+        color: #007bff;
+        text-decoration: none;
+        line-height: 0.8em;
+    }
+</style>
 {% endblock %}

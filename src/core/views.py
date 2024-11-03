@@ -4,6 +4,7 @@ from werkzeug.utils import secure_filename
 import face_recognition
 import cv2
 import logging
+import time
 import os
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
@@ -50,10 +51,28 @@ def election_voters(encrypted_election_id):
 def my_elections():
     page = request.args.get('page', 1, type=int)
     per_page = 18
+    sort_by = request.args.get('sort_by', 'created_at')  # Varsayılan sıralama alanı 'created_at'
+    order = request.args.get('order', 'asc')
+
+    # Sıralama için sorgu oluşturma
     elections_query = Election.query.filter_by(creator_id=current_user.id)
+    if order == 'asc':
+        elections_query = elections_query.order_by(getattr(Election, sort_by).asc())
+    else:
+        elections_query = elections_query.order_by(getattr(Election, sort_by).desc())
+
+    # Paginasyon ve şifreleme işlemi
     elections = elections_query.paginate(page=page, per_page=per_page, error_out=True)
     encrypted_elections = [(encrypt_id(election.id), election) for election in elections.items]
-    return render_template('core/my_elections.html', elections=encrypted_elections, pagination=elections)
+
+    return render_template(
+        'core/my_elections.html',
+        elections=encrypted_elections,
+        pagination=elections,
+        sort_by=sort_by,
+        order=order
+    )
+
 
 
 
@@ -97,22 +116,39 @@ def face_control(token):
         if not face_record:
             return jsonify({"success": False, "message": "Yüz verisi bulunamadı."}), 400
 
-        image_file = request.files.get('image')
-        if not image_file:
-            return jsonify({"success": False, "message": "Görüntü yüklenemedi."}), 400
+        # 3 farklı yüz encodesi elde etmek için bir döngü başlatıyoruz
+        captured_encodings = []
+        capture_attempts = 3
+        delay_between_captures = 1.5  # saniye cinsinden
 
-        input_image = face_recognition.load_image_file(image_file)
-        input_encoding = face_recognition.face_encodings(input_image)
+        for _ in range(capture_attempts):
+            image_file = request.files.get('image')
+            if not image_file:
+                return jsonify({"success": False, "message": "Görüntü yüklenemedi."}), 400
 
-        if len(input_encoding) == 0:
-            return jsonify({"success": False, "message": "Yüz algılanamadı."}), 400
+            input_image = face_recognition.load_image_file(image_file)
+            input_encoding = face_recognition.face_encodings(input_image)
 
+            if len(input_encoding) == 0:
+                return jsonify({"success": False, "message": "Yüz algılanamadı."}), 400
+
+            # İlk encodeden sonra benzerlik kontrolü yaparak listeye ekle
+            if all(not face_recognition.compare_faces([enc], input_encoding[0])[0] for enc in captured_encodings):
+                captured_encodings.append(input_encoding[0])
+
+            # Yeterli farklılık sağlanmadıysa, gecikme ile tekrar dene
+            if len(captured_encodings) < capture_attempts:
+                time.sleep(delay_between_captures)
+
+        # Eğer 3 farklı yüz encodesi sağlanamazsa doğrulama başarısız
+        if len(captured_encodings) < capture_attempts:
+            return jsonify({"success": False, "message": "Yeterli yüz farklılığı sağlanamadı."}), 400
+
+        # Üç farklı encodeden en az biri ile eşleşme kontrolü yap
         known_encoding = np.frombuffer(face_record.encoding)
-        match = face_recognition.compare_faces([known_encoding], input_encoding[0])
-
-        if match[0]:
+        if any(face_recognition.compare_faces([known_encoding], enc)[0] for enc in captured_encodings):
             encrypted_token = encrypt_id(token)
-            logging.info(f"Yüz doğrulama başarılı, şifrelenmiş token: {encrypted_token}")  # Log ekledik
+            logging.info(f"Yüz doğrulama başarılı, şifrelenmiş token: {encrypted_token}")
             return jsonify({
                 "success": True,
                 "message": "Yüz doğrulama başarılı!",
@@ -147,13 +183,30 @@ def vote(encrypted_token):
     voter = Voter.query.filter_by(id=vote_token.voter_id).first()
 
     if request.method == 'POST':
+        # Seçilen option_id'yi formdan al
+        selected_option_id = request.form.get("option")
+        if not selected_option_id:
+            flash("Lütfen bir seçenek seçin.", "warning")
+            return redirect(url_for("core.vote", encrypted_token=encrypted_token))
+
+        # Vote kaydını oluştur ve veritabanına ekle
+        vote = Votes(
+            voter_id=voter.id,
+            election_id=election.id,
+            option_id=selected_option_id
+        )
+        db.session.add(vote)
+        
+        # Token'i kullanılmış olarak işaretle ve değişiklikleri kaydet
         vote_token.used = True
         db.session.commit()
+        
         flash("Oyunuz başarıyla kaydedildi!", "success")
         return render_template("core/vote_confirmation.html", voter=voter)
 
     # Oy kullanma sayfası render ediliyor
     return render_template("core/vote.html", encrypted_token=encrypted_token, election=election, options=options)
+
 
 
 
