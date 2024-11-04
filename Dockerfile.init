@@ -28,5 +28,6 @@ ENV FERNET_KEY="H_KAHfq4pkq6AnlNwmzVHs2RrSzi9jGykPp8EkGc4BA="
 ENV SERVER_NAME=localhost:5000
 ENV PREFERRED_URL_SCHEME=http
 
-CMD ["flask", "run", "--host=0.0.0.0"]
-EXPOSE 5000
+COPY init_db.py .
+
+CMD ["python", "init_db.py"]
