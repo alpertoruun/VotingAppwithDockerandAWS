@@ -3,7 +3,6 @@
 .DS_Store
 .coverage
 env
-migrations
 tmp
 __pycache__
 env.sh
