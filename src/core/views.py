@@ -45,43 +45,47 @@ def election_voters(encrypted_election_id):
     return render_template('core/election_voters.html', election=election, voter_info=voter_info, pagination=vote_tokens_paginated)
 
 
-
 @core_bp.route('/my_elections')
 @login_required
 def my_elections():
     page = request.args.get('page', 1, type=int)
     per_page = 18
-    sort_by = request.args.get('sort_by', 'created_at')
+    sort_by = request.args.get('sort_by', 'created_at')  # Varsayılan sıralama alanı 'created_at'
     order = request.args.get('order', 'asc')
-    search = request.args.get('search', '').strip()  # Arama parametresi
+    search_query = request.args.get('search', '')
 
-    # Sorgu oluşturma ve filtreleme
-    elections_query = Election.query.filter_by(creator_id=current_user.id)
+    # Sıralama ve arama için sorgu oluşturma
+    elections_query = Election.query.filter(Election.creator_id == current_user.id)
+    if search_query:
+        elections_query = elections_query.filter(Election.title.ilike(f"%{search_query}%"))
     
-    if search:
-        elections_query = elections_query.filter(Election.title.ilike(f'%{search}%'))  # Arama filtresi
-
-    # Sıralama ekleme
     if order == 'asc':
         elections_query = elections_query.order_by(getattr(Election, sort_by).asc())
     else:
         elections_query = elections_query.order_by(getattr(Election, sort_by).desc())
 
-    # Sayfalama ve şifreleme
+    # Paginasyon ve şifreleme işlemi
     elections = elections_query.paginate(page=page, per_page=per_page, error_out=True)
     encrypted_elections = [(encrypt_id(election.id), election) for election in elections.items]
 
+    # Eğer AJAX isteği ise, yalnızca tabloyu render edin
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render_template(
+            'core/election_table.html',
+            elections=encrypted_elections,
+            pagination=elections,
+            sort_by=sort_by,
+            order=order
+        )
+
+    # Normal istekte tüm sayfayı render edin
     return render_template(
         'core/my_elections.html',
         elections=encrypted_elections,
         pagination=elections,
         sort_by=sort_by,
-        order=order,
-        search=search  # Arama parametresini template'e gönderiyoruz
+        order=order
     )
-
-
-
 
 
 
