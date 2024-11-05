@@ -3,38 +3,47 @@
 {% block content %}
 <div class="container mt-4">
     <h1 class="mb-4">Oluşturduğum Oylamalarım</h1>
+    
+    <!-- Arama Formu -->
+    <form method="get" action="{{ url_for('core.my_elections') }}" class="mb-4">
+        <div class="input-group">
+            <input type="text" name="search" class="form-control" placeholder="Oylama ismine göre ara" value="{{ request.args.get('search', '') }}">
+            <button class="btn btn-primary" type="submit">Ara</button>
+        </div>
+    </form>
+
     <div class="table-responsive">
         <table class="table table-bordered table-hover">
             <thead class="thead-dark">
                 <tr>
                     <th>Oylama İsmi
                         <div class="sort-icons">
-                            <a href="{{ url_for('core.my_elections', sort_by='title', order='asc') }}">▲</a>
-                            <a href="{{ url_for('core.my_elections', sort_by='title', order='desc') }}">▼</a>
+                            <a href="{{ url_for('core.my_elections', sort_by='title', order='asc', search=request.args.get('search', '')) }}">▲</a>
+                            <a href="{{ url_for('core.my_elections', sort_by='title', order='desc', search=request.args.get('search', '')) }}">▼</a>
                         </div>
                     </th>
                     <th>Açıklama
                         <div class="sort-icons">
-                            <a href="{{ url_for('core.my_elections', sort_by='description', order='asc') }}">▲</a>
-                            <a href="{{ url_for('core.my_elections', sort_by='description', order='desc') }}">▼</a>
+                            <a href="{{ url_for('core.my_elections', sort_by='description', order='asc', search=request.args.get('search', '')) }}">▲</a>
+                            <a href="{{ url_for('core.my_elections', sort_by='description', order='desc', search=request.args.get('search', '')) }}">▼</a>
                         </div>
                     </th>
                     <th>Oluşturulma Tarihi(dd/mm/yyyy)
                         <div class="sort-icons">
-                            <a href="{{ url_for('core.my_elections', sort_by='created_at', order='asc') }}">▲</a>
-                            <a href="{{ url_for('core.my_elections', sort_by='created_at', order='desc') }}">▼</a>
+                            <a href="{{ url_for('core.my_elections', sort_by='created_at', order='asc', search=request.args.get('search', '')) }}">▲</a>
+                            <a href="{{ url_for('core.my_elections', sort_by='created_at', order='desc', search=request.args.get('search', '')) }}">▼</a>
                         </div>
                     </th>
                     <th>Başlangıç Tarihi(dd/mm/yyyy)
                         <div class="sort-icons">
-                            <a href="{{ url_for('core.my_elections', sort_by='start_date', order='asc') }}">▲</a>
-                            <a href="{{ url_for('core.my_elections', sort_by='start_date', order='desc') }}">▼</a>
+                            <a href="{{ url_for('core.my_elections', sort_by='start_date', order='asc', search=request.args.get('search', '')) }}">▲</a>
+                            <a href="{{ url_for('core.my_elections', sort_by='start_date', order='desc', search=request.args.get('search', '')) }}">▼</a>
                         </div>
                     </th>
                     <th>Bitiş Tarihi(dd/mm/yyyy)
                         <div class="sort-icons">
-                            <a href="{{ url_for('core.my_elections', sort_by='end_date', order='asc') }}">▲</a>
-                            <a href="{{ url_for('core.my_elections', sort_by='end_date', order='desc') }}">▼</a>
+                            <a href="{{ url_for('core.my_elections', sort_by='end_date', order='asc', search=request.args.get('search', '')) }}">▲</a>
+                            <a href="{{ url_for('core.my_elections', sort_by='end_date', order='desc', search=request.args.get('search', '')) }}">▼</a>
                         </div>
                     </th>
                     <th>Seçmenler</th>
@@ -60,21 +69,23 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Sayfalama -->
     <nav aria-label="Page navigation">
         <ul class="pagination justify-content-center">
             {% if pagination.has_prev %}
             <li class="page-item">
-                <a class="page-link" href="{{ url_for('core.my_elections', page=pagination.prev_num, sort_by=sort_by, order=order) }}">Önceki</a>
+                <a class="page-link" href="{{ url_for('core.my_elections', page=pagination.prev_num, sort_by=sort_by, order=order, search=request.args.get('search', '')) }}">Önceki</a>
             </li>
             {% endif %}
             {% for page_num in pagination.iter_pages() %}
             <li class="page-item {{ 'active' if page_num == pagination.page else '' }}">
-                <a class="page-link" href="{{ url_for('core.my_elections', page=page_num, sort_by=sort_by, order=order) }}">{{ page_num }}</a>
+                <a class="page-link" href="{{ url_for('core.my_elections', page=page_num, sort_by=sort_by, order=order, search=request.args.get('search', '')) }}">{{ page_num }}</a>
             </li>
             {% endfor %}
             {% if pagination.has_next %}
             <li class="page-item">
-                <a class="page-link" href="{{ url_for('core.my_elections', page=pagination.next_num, sort_by=sort_by, order=order) }}">Sonraki</a>
+                <a class="page-link" href="{{ url_for('core.my_elections', page=pagination.next_num, sort_by=sort_by, order=order, search=request.args.get('search', '')) }}">Sonraki</a>
             </li>
             {% endif %}
         </ul>

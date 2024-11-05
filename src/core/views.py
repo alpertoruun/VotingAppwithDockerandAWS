@@ -51,17 +51,23 @@ def election_voters(encrypted_election_id):
 def my_elections():
     page = request.args.get('page', 1, type=int)
     per_page = 18
-    sort_by = request.args.get('sort_by', 'created_at')  # Varsayılan sıralama alanı 'created_at'
+    sort_by = request.args.get('sort_by', 'created_at')
     order = request.args.get('order', 'asc')
+    search = request.args.get('search', '').strip()  # Arama parametresi
 
-    # Sıralama için sorgu oluşturma
+    # Sorgu oluşturma ve filtreleme
     elections_query = Election.query.filter_by(creator_id=current_user.id)
+    
+    if search:
+        elections_query = elections_query.filter(Election.title.ilike(f'%{search}%'))  # Arama filtresi
+
+    # Sıralama ekleme
     if order == 'asc':
         elections_query = elections_query.order_by(getattr(Election, sort_by).asc())
     else:
         elections_query = elections_query.order_by(getattr(Election, sort_by).desc())
 
-    # Paginasyon ve şifreleme işlemi
+    # Sayfalama ve şifreleme
     elections = elections_query.paginate(page=page, per_page=per_page, error_out=True)
     encrypted_elections = [(encrypt_id(election.id), election) for election in elections.items]
 
@@ -70,7 +76,8 @@ def my_elections():
         elections=encrypted_elections,
         pagination=elections,
         sort_by=sort_by,
-        order=order
+        order=order,
+        search=search  # Arama parametresini template'e gönderiyoruz
     )
 
 
