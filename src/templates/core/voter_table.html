@@ -4,26 +4,26 @@
             <tr>
                 <th>TC Kimlik No
                     <div class="sort-icons">
-                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='tc', order='asc') }}">▲</a>
-                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='tc', order='desc') }}">▼</a>
+                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='tc', order='asc', page=pagination.page) }}">▲</a>
+                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='tc', order='desc', page=pagination.page) }}">▼</a>
                     </div>
                 </th>
                 <th>Ad
                     <div class="sort-icons">
-                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='name', order='asc') }}">▲</a>
-                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='name', order='desc') }}">▼</a>
+                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='name', order='asc', page=pagination.page) }}">▲</a>
+                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='name', order='desc', page=pagination.page) }}">▼</a>
                     </div>
                 </th>
                 <th>Soyad
                     <div class="sort-icons">
-                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='surname', order='asc') }}">▲</a>
-                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='surname', order='desc') }}">▼</a>
+                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='surname', order='asc', page=pagination.page) }}">▲</a>
+                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='surname', order='desc', page=pagination.page) }}">▼</a>
                     </div>
                 </th>
                 <th>E-posta
                     <div class="sort-icons">
-                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='email', order='asc') }}">▲</a>
-                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='email', order='desc') }}">▼</a>
+                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='email', order='asc', page=pagination.page) }}">▲</a>
+                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='email', order='desc', page=pagination.page) }}">▼</a>
                     </div>
                 </th>
             </tr>
@@ -40,6 +40,29 @@
         </tbody>
     </table>
 </div>
+
+<!-- Sayfalama -->
+<nav aria-label="Sayfalama">
+    <ul class="pagination justify-content-center">
+        {% if pagination.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, page=pagination.prev_num, sort_by=sort_by, order=order) }}">Önceki</a>
+        </li>
+        {% endif %}
+        {% for page in pagination.iter_pages() %}
+        {% if page %}
+        <li class="page-item {{ 'active' if page == pagination.page else '' }}">
+            <a class="page-link" href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, page=page, sort_by=sort_by, order=order) }}">{{ page }}</a>
+        </li>
+        {% endif %}
+        {% endfor %}
+        {% if pagination.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, page=pagination.next_num, sort_by=sort_by, order=order) }}">Sonraki</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
 
 <style>
     th {
@@ -58,5 +81,8 @@
         color: #007bff;
         text-decoration: none;
         line-height: 0.8em;
+    }
+    .sort-icons a:hover {
+        color: #0056b3;
     }
 </style>
