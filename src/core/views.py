@@ -37,12 +37,50 @@ def election_voters(encrypted_election_id):
 
     page = request.args.get('page', 1, type=int)
     per_page = 18
+    sort_by = request.args.get('sort_by', 'name')  # Varsayılan sıralama alanı
+    order = request.args.get('order', 'asc')
+    search_query = request.args.get('search', '')
+
+    # Sıralama ve arama işlemleri
     vote_tokens_query = VoteToken.query.filter_by(election_id=election_id).join(Voter, VoteToken.voter_id == Voter.id)
+    if search_query:
+        vote_tokens_query = vote_tokens_query.filter(
+            (Voter.name.ilike(f"%{search_query}%")) |
+            (Voter.surname.ilike(f"%{search_query}%")) |
+            (Voter.tc.ilike(f"%{search_query}%")) |
+            (Voter.email.ilike(f"%{search_query}%"))
+        )
+
+    if order == 'asc':
+        vote_tokens_query = vote_tokens_query.order_by(getattr(Voter, sort_by).asc())
+    else:
+        vote_tokens_query = vote_tokens_query.order_by(getattr(Voter, sort_by).desc())
+
+    # Paginasyon ve seçmen bilgisi
     vote_tokens_paginated = vote_tokens_query.paginate(page=page, per_page=per_page, error_out=True)
     voter_info = [(token, Voter.query.get(token.voter_id)) for token in vote_tokens_paginated.items]
-    print(voter_info)
 
-    return render_template('core/election_voters.html', election=election, voter_info=voter_info, pagination=vote_tokens_paginated)
+    # AJAX isteği için tablo render işlemi
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render_template(
+            'core/voter_table.html',
+            voter_info=voter_info,
+            pagination=vote_tokens_paginated,
+            sort_by=sort_by,
+            order=order,
+            encrypted_election_id=encrypted_election_id
+        )
+
+    # Tüm sayfayı render et
+    return render_template(
+        'core/election_voters.html',
+        election=election,
+        voter_info=voter_info,
+        pagination=vote_tokens_paginated,
+        sort_by=sort_by,
+        order=order,
+        encrypted_election_id=encrypted_election_id
+    )
 
 
 @core_bp.route('/my_elections')

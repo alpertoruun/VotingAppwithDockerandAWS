@@ -1,0 +1,62 @@
+<div class="table-responsive">
+    <table class="table table-bordered table-hover">
+        <thead class="thead-dark">
+            <tr>
+                <th>TC Kimlik No
+                    <div class="sort-icons">
+                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='tc', order='asc') }}">▲</a>
+                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='tc', order='desc') }}">▼</a>
+                    </div>
+                </th>
+                <th>Ad
+                    <div class="sort-icons">
+                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='name', order='asc') }}">▲</a>
+                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='name', order='desc') }}">▼</a>
+                    </div>
+                </th>
+                <th>Soyad
+                    <div class="sort-icons">
+                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='surname', order='asc') }}">▲</a>
+                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='surname', order='desc') }}">▼</a>
+                    </div>
+                </th>
+                <th>E-posta
+                    <div class="sort-icons">
+                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='email', order='asc') }}">▲</a>
+                        <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='email', order='desc') }}">▼</a>
+                    </div>
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for token, voter in voter_info %}
+            <tr>
+                <td>{{ voter.tc }}</td>
+                <td>{{ voter.name }}</td>
+                <td>{{ voter.surname }}</td>
+                <td>{{ voter.email }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+    th {
+        position: relative;
+    }
+    .sort-icons {
+        display: flex;
+        flex-direction: column;
+        position: absolute;
+        top: 50%;
+        right: 5px;
+        transform: translateY(-50%);
+    }
+    .sort-icons a {
+        font-size: 0.6em;
+        color: #007bff;
+        text-decoration: none;
+        line-height: 0.8em;
+    }
+</style>

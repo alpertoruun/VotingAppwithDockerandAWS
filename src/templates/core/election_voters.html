@@ -3,46 +3,47 @@
 {% block content %}
 <div class="container mt-4">
     <h1 class="mb-4">{{ election.title }} - Seçmenler</h1>
-    <div class="table-responsive">
-        <table class="table table-bordered table-hover">
-            <thead class="thead-dark">
-                <tr>
-                    <th>TC Kimlik No</th>
-                    <th>Ad</th>
-                    <th>Soyad</th>
-                    <th>E-posta</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for token, voter in voter_info %}
-                <tr>
-                    <td>{{ voter.tc }}</td>
-                    <td>{{ voter.name }}</td>
-                    <td>{{ voter.surname }}</td>
-                    <td>{{ voter.email }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <input type="text" id="search-input" class="form-control" placeholder="Seçmen ara (Ad, Soyad, TC, E-posta)">
+    
+    <div id="voter-table">
+        {% include 'core/voter_table.html' %}
     </div>
-    <nav aria-label="Page navigation">
-        <ul class="pagination justify-content-center">
-            {% if pagination.has_prev %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ pagination.prev_num }}">Önceki</a>
-            </li>
-            {% endif %}
-            {% for page in pagination.iter_pages() %}
-            <li class="page-item {{ 'active' if page == pagination.page else '' }}">
-                <a class="page-link" href="?page={{ page }}">{{ page }}</a>
-            </li>
-            {% endfor %}
-            {% if pagination.has_next %}
-            <li class="page-item">
-                <a class="page-link" href="?page={{ pagination.next_num }}">Sonraki</a>
-            </li>
-            {% endif %}
-        </ul>
-    </nav>
 </div>
+
+<script>
+    document.getElementById('search-input').addEventListener('keyup', function() {
+        const searchQuery = this.value;
+        const url = new URL(window.location.href);
+        url.searchParams.set('search', searchQuery);
+
+        fetch(url, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('voter-table').innerHTML = html;
+        })
+        .catch(error => console.error('Hata:', error));
+    });
+
+    document.querySelectorAll('.sort-icons a').forEach(anchor => {
+        anchor.addEventListener('click', function(event) {
+            event.preventDefault();
+            const url = new URL(this.href);
+
+            fetch(url, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                document.getElementById('voter-table').innerHTML = html;
+            })
+            .catch(error => console.error('Hata:', error));
+        });
+    });
+</script>
 {% endblock %}
