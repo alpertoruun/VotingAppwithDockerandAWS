@@ -14,6 +14,8 @@ from src.utils.email_validator import validate_email_address, EmailNotValidError
 from src.utils.vote_token_utils import create_vote_token_entry
 from src.utils.encrypt_election_id import encrypt_id, decrypt_id
 from src.utils.face_recognition import get_face_encoding, save_face_encoding, save_photo
+import numpy as np
+
 
 
 core_bp = Blueprint("core", __name__)
