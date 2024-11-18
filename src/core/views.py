@@ -164,7 +164,7 @@ def face_control(token):
     # Tokenin geçerliliğini kontrol et
     vote_token = VoteToken.query.filter_by(token=token, used=False).first()
     if not vote_token:
-        flash("Oylama saatleri dışındasınız.", "danger")
+        flash("Geçersiz ya da kullanılmış Token.", "danger")
         return redirect(url_for("core.create_election"))
 
     # Seçim tarihlerini kontrol et
@@ -309,40 +309,56 @@ def create_election():
         voter_emails = request.form.getlist('voterEmail[]')
         voter_photos = request.files.getlist('voterPhoto[]')
 
-        # E-posta ve TC doğrulama
-        voter_data = zip(voter_tcs, voter_emails)
+        # 1. E-posta ve TC doğrulama
         email_to_tc = defaultdict(set)
+        face_encodings_list = []
+        tc_face_map = {}
         error = False
-        for tc, email in voter_data:
+
+        # Seçmen verilerini doğrula
+        for tc, email, name, surname, photo in zip(voter_tcs, voter_emails, voter_names, voter_surnames, voter_photos):
+            # E-posta doğrulama
             valid_email = validate_email_address(email)
-            if valid_email is None:
+            if not valid_email:
                 flash(f'Geçersiz e-posta adresi: {email}', 'warning')
                 error = True
                 break
+
             if email in email_to_tc and tc not in email_to_tc[email]:
                 flash(f'E-posta adresi {email} farklı TC kimlik numaralarıyla kullanılamaz.', 'warning')
                 error = True
                 break
             email_to_tc[email].add(tc)
 
-        if error:
-            return redirect(url_for('core.create_election', _external=True))
+            # Yüz tanıma doğrulaması
+            if photo and allowed_file(photo.filename):
+                photo_path = save_photo(photo)  # Fotoğrafı rastgele isimle kaydet
+                face_encoding = get_face_encoding(photo_path)
 
-        # Aynı TC'ye sahip seçmenlerin verilerini kontrol et
-        voter_expanded_data = zip(voter_tcs, voter_names, voter_surnames, voter_emails)
-        for tc, name, surname, email in voter_expanded_data:
-            for other_tc, other_name, other_surname, other_email in voter_expanded_data:
-                if tc == other_tc and ((name, surname) != (other_name, other_surname) or email != other_email):
-                    flash(f'Aynı TC kimlik numarasına sahip ({tc}) seçmenlerin isim, soyisim veya e-posta adresleri farklı olamaz.', 'warning')
+                if face_encoding is not None and face_encoding.size > 0:
+                    for existing_encoding, existing_tc in face_encodings_list:
+                        match = face_recognition.compare_faces([existing_encoding], face_encoding, tolerance=0.6)
+                        if match[0] and existing_tc != tc:
+                            flash(f"Yüz verisi başka bir seçmenle eşleşiyor: {tc} - {existing_tc}", "warning")
+                            error = True
+                            break
+
+                    if error:
+                        break
+
+                    # Yeni yüz encoding'i listeye ekle
+                    face_encodings_list.append((face_encoding, tc))
+                    tc_face_map[tc] = {"encoding": face_encoding, "photo_path": photo_path}
+                else:
+                    flash(f"{tc} TC kimlik numarasına sahip seçmen için geçerli yüz verisi bulunamadı.", "warning")
                     error = True
                     break
-            if error:
-                break
 
+        # Eğer herhangi bir hata varsa işlemi durdur
         if error:
             return redirect(url_for('core.create_election', _external=True))
 
-        # Oylama kaydını oluştur
+        # 2. Tüm kontroller başarılı, seçim oluşturma işlemini başlat
         election = Election(
             title=title,
             description=description,
@@ -358,62 +374,35 @@ def create_election():
             option = Option(description=option_desc, election_id=election.id)
             db.session.add(option)
 
-        # Encoding'leri karşılaştırmak için bir liste
-        face_encodings_list = []
-        tc_face_map = {}
-
-        # Seçmenleri ekle ve yüz tanıma verilerini kaydet
-        for tc, name, surname, email, photo in zip(voter_tcs, voter_names, voter_surnames, voter_emails, voter_photos):
-            photo_path = None
-            face_encoding = None
-
-            # Fotoğrafı kaydet ve encoding işle
-            if photo and allowed_file(photo.filename):
-                photo_path = save_photo(photo)  # Fotoğrafı rastgele isimle kaydet
-                face_encoding = get_face_encoding(photo_path)
-
-            # Yüz tanıma encoding doğrulaması
-            if face_encoding is not None and face_encoding.size > 0:
-                for existing_encoding, existing_tc in face_encodings_list:
-                    match = face_recognition.compare_faces([existing_encoding], face_encoding, tolerance=0.6)
-
-                    if match[0] and existing_tc != tc:
-                        flash(f"Yüz verisi başka bir seçmenle eşleşiyor: {tc}-{existing_tc}", "warning")
-                        error = True
-                        break
-
-                if error:
-                    break
-
-                # Yeni yüz verisini ekle
-                face_encodings_list.append((face_encoding, tc))
-                tc_face_map[tc] = face_encoding
-
-            # Seçmen kaydı veya güncelleme
+        # Seçmenleri kaydet
+        for tc, name, surname, email in zip(voter_tcs, voter_names, voter_surnames, voter_emails):
             voter = Voter.query.filter_by(tc=tc).first()
+            face_data = tc_face_map.get(tc)
+
             if voter:
+                # Mevcut seçmen bilgilerini güncelle
                 voter.name = name
                 voter.surname = surname
                 voter.email = email
-                if face_encoding is not None:
+                if face_data:
                     if voter.face_id:
                         face_recognition_entry = FaceRecognition.query.get(voter.face_id)
-                        face_recognition_entry.encoding = face_encoding  # Encoding'i güncelle
-                        face_recognition_entry.image_path = photo_path  # Fotoğraf yolunu güncelle
+                        face_recognition_entry.encoding = face_data["encoding"]
+                        face_recognition_entry.image_path = face_data["photo_path"]
                     else:
-                        face_id = save_face_encoding(face_encoding, photo_path)  # Yeni encoding ve fotoğraf
+                        face_id = save_face_encoding(face_data["encoding"], face_data["photo_path"])
                         voter.face_id = face_id
             else:
-                face_id = save_face_encoding(face_encoding, photo_path) if face_encoding is not None else None
+                # Yeni seçmen oluştur
+                face_id = save_face_encoding(face_data["encoding"], face_data["photo_path"]) if face_data else None
                 voter = Voter(tc=tc, name=name, surname=surname, email=email, face_id=face_id)
                 db.session.add(voter)
 
             db.session.commit()
+
+            # Oylama token'ı oluştur ve e-posta gönder
             token = create_vote_token_entry(voter.id, election.id)
             send_vote_link(voter, token, election)
-
-        if error:
-            return redirect(url_for('core.create_election', _external=True))
 
         flash('Oylama başarıyla oluşturuldu!', "success")
         return redirect(url_for("core.my_elections", _external=True))
