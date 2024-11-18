@@ -13,10 +13,11 @@ from src.utils.email_utils import send_vote_link
 from src.utils.email_validator import validate_email_address, EmailNotValidError
 from src.utils.vote_token_utils import create_vote_token_entry
 from src.utils.encrypt_election_id import encrypt_id, decrypt_id
-from src.utils.face_recognition import get_face_encoding, save_face_encoding
+from src.utils.face_recognition import get_face_encoding, save_face_encoding, save_photo
 
 
 core_bp = Blueprint("core", __name__)
+
 
 
 
@@ -82,6 +83,12 @@ def election_voters(encrypted_election_id):
         encrypted_election_id=encrypted_election_id
     )
 
+from flask import send_from_directory
+@core_bp.route('/static/uploads/<path:filename>')
+@login_required
+def custom_static(filename):
+    uploads_dir = "/mnt/c/Users/alper.torun/Desktop/files/VotingAppwithDockerandAWS/static/uploads"
+    return send_from_directory(uploads_dir, filename)
 
 @core_bp.route('/my_elections')
 @login_required
@@ -357,32 +364,34 @@ def create_election():
 
         # Seçmenleri ekle ve yüz tanıma verilerini kaydet
         for tc, name, surname, email, photo in zip(voter_tcs, voter_names, voter_surnames, voter_emails, voter_photos):
+            photo_path = None
+            face_encoding = None
+
+            # Fotoğrafı kaydet ve encoding işle
             if photo and allowed_file(photo.filename):
-                filename = secure_filename(photo.filename)
-                image_path = os.path.join("uploads", filename)
-                photo.save(image_path)
-                face_encoding = get_face_encoding(image_path)
+                photo_path = save_photo(photo)  # Fotoğrafı rastgele isimle kaydet
+                face_encoding = get_face_encoding(photo_path)
 
-                if face_encoding is not None and face_encoding.size > 0:
-                    for existing_encoding, existing_tc in face_encodings_list:
-                        match = face_recognition.compare_faces([existing_encoding], face_encoding, tolerance=0.6)
+            # Yüz tanıma encoding doğrulaması
+            if face_encoding is not None and face_encoding.size > 0:
+                for existing_encoding, existing_tc in face_encodings_list:
+                    match = face_recognition.compare_faces([existing_encoding], face_encoding, tolerance=0.6)
 
-                        if match[0] and existing_tc != tc:
-                            flash(f"Yüz verisi başka bir seçmenle eşleşiyor: {tc}-{existing_tc}", "warning")
-                            error = True
-                            break
-
-                    if error:
+                    if match[0] and existing_tc != tc:
+                        flash(f"Yüz verisi başka bir seçmenle eşleşiyor: {tc}-{existing_tc}", "warning")
+                        error = True
                         break
 
-                    # Yeni yüz verisini ekle
-                    face_encodings_list.append((face_encoding, tc))
-                    tc_face_map[tc] = face_encoding  # TC ile face_encoding eşleştir
+                if error:
+                    break
 
-            # Seçmen kayıt veya güncelleme
+                # Yeni yüz verisini ekle
+                face_encodings_list.append((face_encoding, tc))
+                tc_face_map[tc] = face_encoding
+
+            # Seçmen kaydı veya güncelleme
             voter = Voter.query.filter_by(tc=tc).first()
             if voter:
-                # Mevcut seçmen için yüz encoding'i güncelle
                 voter.name = name
                 voter.surname = surname
                 voter.email = email
@@ -390,12 +399,12 @@ def create_election():
                     if voter.face_id:
                         face_recognition_entry = FaceRecognition.query.get(voter.face_id)
                         face_recognition_entry.encoding = face_encoding  # Encoding'i güncelle
+                        face_recognition_entry.image_path = photo_path  # Fotoğraf yolunu güncelle
                     else:
-                        # Eğer face_id yoksa yeni bir FaceRecognition kaydı oluştur
-                        face_id = save_face_encoding(face_encoding)
+                        face_id = save_face_encoding(face_encoding, photo_path)  # Yeni encoding ve fotoğraf
                         voter.face_id = face_id
             else:
-                face_id = save_face_encoding(face_encoding) if face_encoding is not None else None
+                face_id = save_face_encoding(face_encoding, photo_path) if face_encoding is not None else None
                 voter = Voter(tc=tc, name=name, surname=surname, email=email, face_id=face_id)
                 db.session.add(voter)
 

@@ -44,6 +44,7 @@ class Voter(db.Model):
 class FaceRecognition(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     encoding = db.Column(db.LargeBinary, nullable=False)
+    image_path = db.Column(db.String(255), nullable=True)
 
 
 class Election(db.Model):

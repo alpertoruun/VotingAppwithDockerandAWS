@@ -2,6 +2,7 @@
     <table class="table table-bordered table-hover">
         <thead class="thead-dark">
             <tr>
+                <th style="width: 150px; text-align: center;">Fotoğraf</th>
                 <th>TC Kimlik No
                     <div class="sort-icons">
                         <a href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, sort_by='tc', order='asc', page=pagination.page) }}">▲</a>
@@ -31,6 +32,13 @@
         <tbody>
             {% for token, voter in voter_info %}
             <tr>
+                <td style="text-align: center;">
+                    {% if voter.face_recognition and voter.face_recognition.image_path %}
+                    <img src="/{{ voter.face_recognition.image_path }}" alt="Fotoğraf" style="width: 100px; height: 100px; border-radius: 10%;">
+                    {% else %}
+                    <span>Fotoğraf Yok</span>
+                    {% endif %}
+                </td>
                 <td>{{ voter.tc }}</td>
                 <td>{{ voter.name }}</td>
                 <td>{{ voter.surname }}</td>
@@ -41,33 +49,11 @@
     </table>
 </div>
 
-<!-- Sayfalama -->
-<nav aria-label="Sayfalama">
-    <ul class="pagination justify-content-center">
-        {% if pagination.has_prev %}
-        <li class="page-item">
-            <a class="page-link" href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, page=pagination.prev_num, sort_by=sort_by, order=order) }}">Önceki</a>
-        </li>
-        {% endif %}
-        {% for page in pagination.iter_pages() %}
-        {% if page %}
-        <li class="page-item {{ 'active' if page == pagination.page else '' }}">
-            <a class="page-link" href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, page=page, sort_by=sort_by, order=order) }}">{{ page }}</a>
-        </li>
-        {% endif %}
-        {% endfor %}
-        {% if pagination.has_next %}
-        <li class="page-item">
-            <a class="page-link" href="{{ url_for('core.election_voters', encrypted_election_id=encrypted_election_id, page=pagination.next_num, sort_by=sort_by, order=order) }}">Sonraki</a>
-        </li>
-        {% endif %}
-    </ul>
-</nav>
-
 <style>
     th {
         position: relative;
     }
+
     .sort-icons {
         display: flex;
         flex-direction: column;
@@ -76,12 +62,14 @@
         right: 5px;
         transform: translateY(-50%);
     }
+
     .sort-icons a {
         font-size: 0.6em;
         color: #007bff;
         text-decoration: none;
         line-height: 0.8em;
     }
+
     .sort-icons a:hover {
         color: #0056b3;
     }
