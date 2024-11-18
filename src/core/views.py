@@ -140,7 +140,7 @@ def election_results(encrypted_election_id):
     option_counts = OptionCount.query.filter_by(election_id=election.id).all()
 
     if not option_counts:
-        flash("Bu seçim için henüz oy sonuçları sayılmamış.", "warning")
+        flash("Bu seçim için henüz oy sonuçları açıklanmamış.", "warning")
         return redirect(url_for('core.my_elections'))
 
     results = {Option.query.get(count.option_id).description: count.vote_count for count in option_counts}
@@ -157,7 +157,8 @@ def face_control(token):
     # Tokenin geçerliliğini kontrol et
     vote_token = VoteToken.query.filter_by(token=token, used=False).first()
     if not vote_token:
-        return jsonify({"success": False, "message": "Geçersiz veya kullanılmış token."}), 400
+        flash("Oylama saatleri dışındasınız.", "danger")
+        return redirect(url_for("core.create_election"))
 
     # Seçim tarihlerini kontrol et
     election = Election.query.get(vote_token.election_id)

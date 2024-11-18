@@ -181,7 +181,7 @@ def login():
         user = User.query.filter_by(email=form.email.data).first()
         if user and bcrypt.check_password_hash(user.password, request.form["password"]):
             if not user.is_approved:
-                flash("Lütfen hesabınızı doğrulayın.", "warning")
+                flash("Hesabınız henüz doğrulamadınmıi değil.", "warning")
                 resend_url = url_for('accounts.resend_verification', user_id=user.id, _external=True)
                 flash(f"Lütfen hesabınızı doğrulayın. <a href='{resend_url}'>Doğrulama linkini tekrar göndermek için tıklayınız.</a>", 'info')
 
