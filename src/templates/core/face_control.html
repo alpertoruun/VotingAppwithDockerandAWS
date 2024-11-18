@@ -338,34 +338,70 @@ function captureAndVerify() {
         }
     }, CONFIG.blinkTimeout);
 }
-  function onBlinkVerificationSuccess() {
-    fetch('/blink_verification', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        blink_count: state.blinkCount,
-        token: '{{ token }}'
-      })
-    })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        updateStatus('Doğrulama başarılı! Yönlendiriliyorsunuz...', 'success');
-        setTimeout(() => {
-          window.location.href = data.redirect_url;
-        }, 1000);
-      } else {
-        updateStatus('Doğrulama başarısız. Tekrar deneyin.', 'warning');
-        resetDetection();
-      }
-    })
-    .catch(error => {
-      console.error("Doğrulama hatası:", error);
-      updateStatus('Doğrulama işlemi sırasında bir hata oluştu.', 'danger');
-    });
-  }
+function onBlinkVerificationSuccess() {
+    // Son bir yüz doğrulama kontrolü yap
+    const context = elements.canvas.getContext('2d');
+    elements.canvas.width = elements.video.videoWidth;
+    elements.canvas.height = elements.video.videoHeight;
+    context.drawImage(elements.video, 0, 0);
+
+    elements.canvas.toBlob(blob => {
+        const file = new File([blob], 'final_verification.jpg', { type: "image/jpeg" });
+        const dataTransfer = new DataTransfer();
+        dataTransfer.items.add(file);
+        elements.imageInput.files = dataTransfer.files;
+
+        const formData = new FormData(elements.form);
+
+        updateStatus('Son güvenlik kontrolü yapılıyor...', 'info');
+
+        fetch(elements.form.action, {
+            method: "POST",
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success === "true") {
+                // Son yüz doğrulama başarılı, oy verme işlemine geç
+                fetch('/blink_verification', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        blink_count: state.blinkCount,
+                        token: '{{ token }}'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        updateStatus('Doğrulama başarılı! Yönlendiriliyorsunuz...', 'success');
+                        setTimeout(() => {
+                            window.location.href = data.redirect_url;
+                        }, 1000);
+                    } else {
+                        updateStatus('Doğrulama başarısız. Tekrar deneyin.', 'warning');
+                        resetDetection();
+                    }
+                })
+                .catch(error => {
+                    console.error("Doğrulama hatası:", error);
+                    updateStatus('Doğrulama işlemi sırasında bir hata oluştu.', 'danger');
+                });
+            } else {
+                // Son yüz doğrulama başarısız
+                updateStatus('Son güvenlik kontrolü başarısız. Tekrar deneyin.', 'warning');
+                resetDetection();
+            }
+        })
+        .catch(error => {
+            console.error("Son yüz doğrulama hatası:", error);
+            updateStatus('Son güvenlik kontrolü sırasında bir hata oluştu.', 'danger');
+            resetDetection();
+        });
+    }, 'image/jpeg');
+}
 
   function updateStatus(message, type = 'info') {
     elements.status.className = `alert alert-${type} mb-3`;
