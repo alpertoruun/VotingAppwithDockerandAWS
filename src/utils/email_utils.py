@@ -36,7 +36,7 @@ def send_vote_link(voter, token, election):
     )
     msg.body = (
         f"Sayın {voter.name.capitalize()} {voter.surname.capitalize()},\n\n"
-        f"{election.title} seçimi için yüz doğrulamasından geçmeniz gerekmektedir. "
+        f"{election.title} seçimi için yüz doğrulamasından geçmeniz gerekmektedir. {election.start_date} tarihinden {election.end_date} tarihine kadar oy kullanabilirsiniz."
         f"Aşağıdaki linke tıklayarak yüz doğrulamanızı gerçekleştirin ve oy kullanma sayfasına yönlendirilin:\n{face_control_link}"
     )
 
