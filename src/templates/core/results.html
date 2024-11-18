@@ -1,31 +1,33 @@
 {% extends "_base.html" %}
 
 {% block content %}
-<div class="container">
-    <h1>{{ election.title }} Sonuçları</h1>
-    <div class="row">
+<div class="container mt-4">
+    <h1 class="text-center">{{ election.title }} Sonuçları</h1>
+    <div class="row mb-4">
         <div class="col-md-12 text-right">
             <div class="btn-group" role="group" aria-label="Grafik Türü Seç">
-                <button type="button" class="btn btn-outline-secondary chart-type-btn" data-chart-type="pie">Pasta</button>
+                <button type="button" class="btn btn-outline-secondary chart-type-btn active" data-chart-type="pie">Pasta</button>
                 <button type="button" class="btn btn-outline-secondary chart-type-btn" data-chart-type="bar">Bar</button>
                 <button type="button" class="btn btn-outline-secondary chart-type-btn" data-chart-type="line">Çizgi</button>
             </div>
         </div>
     </div>
-    <div class="row mt-3">
+    <div class="row">
         <div class="col-md-8">
             <canvas id="voteChart"></canvas>
         </div>
         <div class="col-md-4">
-            <h2>Katılım oranı: {{ participation_rate|round(2) }}%</h2>
-            {% for description, count in results.items() %}
-            <p>{{ description }}: {{ count }} oy</p>
-            {% endfor %}
+            <h3>Katılım oranı: {{ participation_rate|round(2) }}%</h3>
+            <ul>
+                {% for description, count in results.items() %}
+                <li>{{ description }}: {{ count }} oy</li>
+                {% endfor %}
+            </ul>
         </div>
     </div>
-    <div class="row mt-4">
+    <div class="row mt-5">
         <div class="col-md-12">
-            <h2>Oylama Tablosu</h2>
+            <h2 class="text-center">Oylama Tablosu</h2>
             <table class="table table-bordered table-hover">
                 <thead class="thead-dark">
                     <tr>
@@ -56,29 +58,17 @@
 <script>
 // Önceden belirlenen renkler
 const baseColors = [
-    'rgba(255, 99, 132, 0.2)', 
-    'rgba(54, 162, 235, 0.2)', 
-    'rgba(255, 206, 86, 0.2)', 
-    'rgba(75, 192, 192, 0.2)', 
-    'rgba(153, 102, 255, 0.2)'
+    'rgba(255, 99, 132, 0.5)', 
+    'rgba(54, 162, 235, 0.5)', 
+    'rgba(255, 206, 86, 0.5)', 
+    'rgba(75, 192, 192, 0.5)', 
+    'rgba(153, 102, 255, 0.5)', 
+    'rgba(255, 159, 64, 0.5)'
 ];
-
-// Rastgele renk üretme fonksiyonu
-function getRandomColor() {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
-}
 
 // Tüm seçenekler için renkleri üret
 function generateColors(count) {
-    const colors = baseColors.slice(0, Math.min(count, baseColors.length));
-    while (colors.length < count) {
-        colors.push(getRandomColor());
-    }
+    const colors = baseColors.slice(0, count);
     return colors;
 }
 
@@ -86,7 +76,6 @@ function generateColors(count) {
 const labels = {{ results.keys()|list|tojson }};
 const data = {{ results.values()|list|tojson }};
 const backgroundColors = generateColors(labels.length);
-const borderColors = backgroundColors.map(color => color.replace('0.2', '1'));
 
 // Grafik Oluşturma Fonksiyonu
 let voteChart; // Grafik nesnesini global olarak tanımlıyoruz
@@ -102,10 +91,10 @@ function createChart(type) {
         data: {
             labels: labels,
             datasets: [{
-                label: 'Oylama Sonuçları',
+                label: type === 'pie' ? 'Oylama Sonuçları' : '', // Pasta grafikte etiket, diğerlerinde boş
                 data: data,
                 backgroundColor: backgroundColors,
-                borderColor: borderColors,
+                borderColor: backgroundColors.map(color => color.replace('0.5', '1')),
                 borderWidth: 1
             }]
         },
@@ -113,13 +102,18 @@ function createChart(type) {
             responsive: true,
             plugins: {
                 legend: {
+                    display: type === 'pie', // Sadece pasta grafikte göster
                     position: 'bottom',
                 },
                 title: {
-                    display: true,
+                    display: type === 'pie', // Sadece pasta grafikte göster
                     text: 'Oylama Sonuçları'
                 }
-            }
+            },
+            scales: type !== 'pie' ? { // Pasta grafikte ölçek olmaz
+                x: { beginAtZero: true },
+                y: { beginAtZero: true }
+            } : {}
         }
     });
 }
