@@ -58,7 +58,7 @@ def send_verify_email(user, token):
     mail = current_app.extensions.get('mail')
     verify_url = url_for('accounts.verify_email', token=token, _external=True)
     msg = Message('E-posta Adresinizi Doğrulayın', sender=current_app.config['MAIL_USERNAME'], recipients=[user.email])
-    msg.body = f"Kayıt olduğunuz için teşekkür ederiz! E-posta adresinizi doğrulamak için aşağıdaki bağlantıya tıklayın:\n{verify_url}\nEğer bu işlemi siz yapmadıysanız, lütfen bu e-postayı dikkate almayın."
+    msg.body = f"Yüz tanıma ile oylama sistemine kayıt olduğunuz için teşekkür ederiz! E-posta adresinizi doğrulamak için aşağıdaki bağlantıya tıklayın:\n{verify_url}\nEğer bu işlemi siz yapmadıysanız, lütfen bu e-postayı dikkate almayın."
     mail.send(msg)
 
 # Seçim sonuçlarını içeren e-posta
