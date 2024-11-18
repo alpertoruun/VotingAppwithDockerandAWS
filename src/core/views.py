@@ -166,12 +166,10 @@ def face_control(token):
     # Tokenin geçerliliğini kontrol et
     vote_token = VoteToken.query.filter_by(token=token, used=False).first()
     if not vote_token:
-        flash("Geçersiz ya da kullanılmış Token.", "danger")
-        return redirect(url_for("core.create_election"))
+        return jsonify({"success": False, "message": "Geçersiz veya kullanılmış token."}), 400
 
     # Seçim tarihlerini kontrol et
     election = Election.query.get(vote_token.election_id)
-
 
     current_time = datetime.utcnow() + timedelta(hours=3)
 
@@ -200,9 +198,34 @@ def face_control(token):
 
         input_image = face_recognition.load_image_file(image_file)
         input_encoding = face_recognition.face_encodings(input_image)
+        
+        # YENİ: Yüz landmarks tespiti
+        face_landmarks = face_recognition.face_landmarks(input_image)
 
-        if len(input_encoding) == 0:
+        if len(input_encoding) == 0 or len(face_landmarks) == 0:
             return jsonify({"success": False, "message": "Yüz algılanamadı."}), 400
+
+        # YENİ: Göz landmark'larını al
+        landmarks = face_landmarks[0]
+        left_eye = landmarks['left_eye']
+        right_eye = landmarks['right_eye']
+
+        # YENİ: Göz açıklık oranını hesapla
+        def calculate_ear(eye_points):
+            # Dikey mesafeler
+            v1 = np.linalg.norm(np.array(eye_points[1]) - np.array(eye_points[5]))
+            v2 = np.linalg.norm(np.array(eye_points[2]) - np.array(eye_points[4]))
+            # Yatay mesafe
+            h = np.linalg.norm(np.array(eye_points[0]) - np.array(eye_points[3]))
+            # EAR hesapla
+            ear = (v1 + v2) / (2.0 * h)
+            return ear
+
+        # YENİ: Her iki göz için EAR hesapla
+        left_ear = calculate_ear(left_eye)
+        right_ear = calculate_ear(right_eye)
+        avg_ear = (left_ear + right_ear) / 2.0
+        EAR_THRESHOLD = 0.25
 
         known_encoding = np.frombuffer(face_record.encoding)
         match = face_recognition.compare_faces([known_encoding], input_encoding[0])
@@ -210,15 +233,50 @@ def face_control(token):
         # Eğer eşleşme varsa success olarak döndür, yoksa başarısız olarak işaretle
         if match[0]:
             encrypted_token = encrypt_id(token)
+            # YENİ: Response'a göz durumu bilgisini ekle
+            return jsonify({
+                "success": "true",
+                "ear_value": float(avg_ear),
+                "eyes_closed": "true" if avg_ear < EAR_THRESHOLD else "false",
+                "message": "Yüz doğrulama başarılı!",
+                "redirect_url": url_for("core.vote", encrypted_token=encrypted_token, _external=True),
+                "verification_stage": "face_verified"
+            }), 200
+        else:
+            return jsonify({"success": "false", "message": "Yüz doğrulama başarısız!"}), 400
+
+    return render_template('core/face_control.html', token=token)
+
+@core_bp.route('/blink_verification', methods=['POST'])
+def blink_verification():
+    """
+    Göz kırpma doğrulama endpoint'i
+    """
+    try:
+        data = request.get_json()
+        blink_count = data.get('blink_count', 0)
+        token = data.get('token')
+        
+        if blink_count >= 3:  # Gerekli göz kırpma sayısına ulaşıldı
+            encrypted_token = encrypt_id(token)
             return jsonify({
                 "success": True,
-                "message": "Yüz doğrulama başarılı!",
+                "message": "Göz kırpma doğrulaması başarılı!",
                 "redirect_url": url_for("core.vote", encrypted_token=encrypted_token, _external=True)
             }), 200
         else:
-            return jsonify({"success": False, "message": "Yüz doğrulama başarısız!"}), 400
+            return jsonify({
+                "success": False,
+                "message": f"Göz kırpma sayısı yetersiz. Mevcut: {blink_count}/3"
+            }), 400
 
-    return render_template('core/face_control.html', token=token)
+    except Exception as e:
+        logging.error(f"Blink verification error: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": "Göz kırpma doğrulaması sırasında bir hata oluştu."
+        }), 500
+
 
 
 @core_bp.route('/vote/<encrypted_token>', methods=['GET', 'POST'])
@@ -286,15 +344,6 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-from flask import flash, redirect, url_for, render_template
-from flask_login import current_user, login_required
-from src import db
-from src.accounts.models import Election, Option, Voter, FaceRecognition
-from src.utils.face_recognition import get_face_encoding, save_face_encoding
-from werkzeug.utils import secure_filename
-import os
-import numpy as np
-from collections import defaultdict
 
 @core_bp.route("/create_election", methods=['GET', 'POST'])
 @login_required
