@@ -166,7 +166,8 @@ def face_control(token):
     # Tokenin geçerliliğini kontrol et
     vote_token = VoteToken.query.filter_by(token=token, used=False).first()
     if not vote_token:
-        return jsonify({"success": False, "message": "Geçersiz veya kullanılmış token."}), 400
+        flash("Geçersiz veya kullanılmış token.", "danger")
+        return redirect(url_for("core.create_election"))
 
     # Seçim tarihlerini kontrol et
     election = Election.query.get(vote_token.election_id)

@@ -7,8 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail
 from flask_wtf import CSRFProtect
 from cryptography.fernet import Fernet
-from flask_apscheduler import APScheduler  # APScheduler import edildi
-
+from flask_apscheduler import APScheduler 
 app = Flask(__name__, static_folder="static")
 app.config.from_object(config("APP_SETTINGS"))
 mail = Mail(app)
