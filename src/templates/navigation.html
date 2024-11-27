@@ -6,6 +6,9 @@
         <li><a href="{{ url_for('core.create_election') }}" class="nav-link px-2 text-secondary">Oylama Oluştur</a></li>
         {% if current_user.is_authenticated %}
         <li><a href="{{ url_for('core.my_elections') }}" class="nav-link px-2 text-secondary">Oylamalarım</a></li>
+        {% if current_user.tc %}
+        <li><a href="{{ url_for('core.joined_elections') }}" class="nav-link px-2 text-secondary">Eklendiğim Oylamalar</a></li>
+        {% endif %}
         {% endif %}
       </ul>
 

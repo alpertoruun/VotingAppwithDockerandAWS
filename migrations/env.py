@@ -3,7 +3,7 @@ from logging.config import fileConfig
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from src import db
-from src.accounts.models import User, Election, Voter, Option, Votes, VoteToken, PasswordResetToken, UpdateEmailToken, FaceRecognition, OptionCount
+from src.accounts.models import User, Election, Option, Votes, VoteToken, PasswordResetToken, UpdateEmailToken, FaceRecognition, OptionCount
 from alembic import context
 
 # this is the Alembic Config object, which provides

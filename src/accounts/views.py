@@ -49,6 +49,9 @@ def user_info(user_id):
     email_form = EmailChangeForm()
     password_form = PasswordChangeForm()
 
+    # Kullanıcı seçmen mi kontrolü
+    is_voter = bool(user.tc)
+
     if email_form.validate_on_submit() and 'email' in request.form:
         new_email = email_form.email.data
         if User.query.filter_by(email=new_email).first():
@@ -72,7 +75,11 @@ def user_info(user_id):
             flash('Mevcut şifre yanlış.', 'error')
         return redirect(url_for('accounts.user_info', user_id=user_id, _external=True))
 
-    return render_template('accounts/user_info.html', user=user, email_form=email_form, password_form=password_form)
+    # Şablon seçimleri
+    if is_voter:
+        return render_template('accounts/user_voter_info.html', user=user)
+    else:
+        return render_template('accounts/user_info.html', user=user, email_form=email_form, password_form=password_form)
 
 
 
@@ -229,17 +236,22 @@ def login():
                 flash("Hesabınız henüz doğrulanmış değil.", "warning")
                 resend_url = url_for('accounts.resend_verification', user_id=user.id, _external=True)
                 flash(f"Lütfen hesabınızı doğrulayın. <a href='{resend_url}'>Doğrulama linkini tekrar göndermek için tıklayınız.</a>", 'info')
-
                 return render_template("accounts/login.html", form=form)
 
+            # Kullanıcı giriş yapar
             login_user(user)
+
+            # Yüz doğrulama kontrolü
+            if not user.is_face_approved:
+                verify_url = url_for('accounts.user_info', user_id=user.id, _external=True)
+                flash(f"Başka kullanıcılar tarafından oylamalara seçmen olarak eklenebilmeniz için yüz doğrulaması yapmanız gerekmektedir. <a href='{verify_url}'>Doğrulamak için tıklayınız.</a>", "warning")
+            
             return redirect(url_for("core.create_election", _external=True))
         else:
             flash("Geçersiz email veya şifre", "danger")
             return render_template("accounts/login.html", form=form)
 
     return render_template("accounts/login.html", form=form)
-
 
 @accounts_bp.route("/resend_verification/<int:user_id>", methods=["GET"])
 def resend_verification(user_id):

@@ -420,3 +420,12 @@ def get_user_info():
         'surname': user.surname,
         'email': user.email
     })
+
+
+@core_bp.route('/joined_elections', methods=['GET'])
+@login_required
+def joined_elections():
+    elections = Election.query.join(VoteToken, VoteToken.election_id == Election.id) \
+        .filter(VoteToken.user_id == current_user.id).all()
+
+    return render_template('core/joined_elections.html', elections=elections)
