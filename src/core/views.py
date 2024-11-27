@@ -8,7 +8,7 @@ import time
 import os
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
-from src.accounts.models import db, Election, Voter, Option, Votes, VoteToken, OptionCount, FaceRecognition
+from src.accounts.models import db, Election, Option, Votes, VoteToken, OptionCount, FaceRecognition
 from src.utils.email_utils import send_vote_link
 from src.utils.email_validator import validate_email_address, EmailNotValidError
 from src.utils.vote_token_utils import create_vote_token_entry
@@ -40,28 +40,32 @@ def election_voters(encrypted_election_id):
 
     page = request.args.get('page', 1, type=int)
     per_page = 18
-    sort_by = request.args.get('sort_by', 'name')  # Varsayılan sıralama alanı
+    sort_by = request.args.get('sort_by', 'name')  
     order = request.args.get('order', 'asc')
     search_query = request.args.get('search', '')
 
     # Sıralama ve arama işlemleri
-    vote_tokens_query = VoteToken.query.filter_by(election_id=election_id).join(Voter, VoteToken.voter_id == Voter.id)
+    vote_tokens_query = (
+        VoteToken.query.filter_by(election_id=election_id)
+        .join(User, VoteToken.user_id == User.id)
+    )
+
     if search_query:
         vote_tokens_query = vote_tokens_query.filter(
-            (Voter.name.ilike(f"%{search_query}%")) |
-            (Voter.surname.ilike(f"%{search_query}%")) |
-            (Voter.tc.ilike(f"%{search_query}%")) |
-            (Voter.email.ilike(f"%{search_query}%"))
+            (User.name.ilike(f"%{search_query}%")) |
+            (User.surname.ilike(f"%{search_query}%")) |
+            (User.tc.ilike(f"%{search_query}%")) |
+            (User.email.ilike(f"%{search_query}%"))
         )
 
     if order == 'asc':
-        vote_tokens_query = vote_tokens_query.order_by(getattr(Voter, sort_by).asc())
+        vote_tokens_query = vote_tokens_query.order_by(getattr(User, sort_by).asc())
     else:
-        vote_tokens_query = vote_tokens_query.order_by(getattr(Voter, sort_by).desc())
+        vote_tokens_query = vote_tokens_query.order_by(getattr(User, sort_by).desc())
 
-    # Paginasyon ve seçmen bilgisi
+    # Paginasyon ve kullanıcı bilgisi
     vote_tokens_paginated = vote_tokens_query.paginate(page=page, per_page=per_page, error_out=True)
-    voter_info = [(token, Voter.query.get(token.voter_id)) for token in vote_tokens_paginated.items]
+    voter_info = [(token, User.query.get(token.user_id)) for token in vote_tokens_paginated.items]
 
     # AJAX isteği için tablo render işlemi
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -187,7 +191,7 @@ def face_control(token):
 
     # POST isteği olduğunda yüz tanıma işlemlerine geç
     if request.method == 'POST':
-        voter = Voter.query.get(vote_token.voter_id)
+        voter = User.query.get(vote_token.user_id)
         face_record = FaceRecognition.query.get(voter.face_id)
 
         if not face_record:
@@ -300,7 +304,7 @@ def vote(encrypted_token):
 
     # Seçenekleri (options) alıyoruz
     options = Option.query.filter_by(election_id=election.id).all()
-    voter = Voter.query.filter_by(id=vote_token.voter_id).first()
+    voter = User.query.filter_by(id=vote_token.user_id).first()
 
     if request.method == 'POST':
         # Seçilen option_id'yi formdan al
@@ -350,67 +354,32 @@ def allowed_file(filename):
 @login_required
 def create_election():
     if request.method == 'POST':
+        # Form verilerini al
         title = request.form.get('title')
         description = request.form.get('description')
         start_date = request.form.get('startDate')
         end_date = request.form.get('endDate')
         options = request.form.getlist('options')
         voter_tcs = request.form.getlist('voterTc[]')
-        voter_names = request.form.getlist('voterName[]')
-        voter_surnames = request.form.getlist('voterSurname[]')
-        voter_emails = request.form.getlist('voterEmail[]')
-        voter_photos = request.files.getlist('voterPhoto[]')
 
-        # 1. E-posta ve TC doğrulama
-        email_to_tc = defaultdict(set)
-        face_encodings_list = []
-        tc_face_map = {}
+        # Hata kontrolü
         error = False
 
-        # Seçmen verilerini doğrula
-        for tc, email, name, surname, photo in zip(voter_tcs, voter_emails, voter_names, voter_surnames, voter_photos):
-            # E-posta doğrulama
-            valid_email = validate_email_address(email)
-            if not valid_email:
-                flash(f'Geçersiz e-posta adresi: {email}', 'warning')
+        # Kullanıcıları doğrula
+        valid_users = []
+        for tc in voter_tcs:
+            user = User.query.filter_by(tc=tc).first()
+            if not user or not user.is_mail_approved or not user.is_face_approved:
+                flash(f"{tc} kimlik numarasına sahip onaylı bir kullanıcı bulunamadı.", "warning")
                 error = True
                 break
+            valid_users.append(user)
 
-            if email in email_to_tc and tc not in email_to_tc[email]:
-                flash(f'E-posta adresi {email} farklı TC kimlik numaralarıyla kullanılamaz.', 'warning')
-                error = True
-                break
-            email_to_tc[email].add(tc)
-
-            # Yüz tanıma doğrulaması
-            if photo and allowed_file(photo.filename):
-                photo_path = save_photo(photo)  # Fotoğrafı rastgele isimle kaydet
-                face_encoding = get_face_encoding(photo_path)
-
-                if face_encoding is not None and face_encoding.size > 0:
-                    for existing_encoding, existing_tc in face_encodings_list:
-                        match = face_recognition.compare_faces([existing_encoding], face_encoding, tolerance=0.6)
-                        if match[0] and existing_tc != tc:
-                            flash(f"Yüz verisi başka bir seçmenle eşleşiyor: {tc} - {existing_tc}", "warning")
-                            error = True
-                            break
-
-                    if error:
-                        break
-
-                    # Yeni yüz encoding'i listeye ekle
-                    face_encodings_list.append((face_encoding, tc))
-                    tc_face_map[tc] = {"encoding": face_encoding, "photo_path": photo_path}
-                else:
-                    flash(f"{tc} TC kimlik numarasına sahip seçmen için geçerli yüz verisi bulunamadı.", "warning")
-                    error = True
-                    break
-
-        # Eğer herhangi bir hata varsa işlemi durdur
+        # Hata varsa formu tekrar yükle
         if error:
             return redirect(url_for('core.create_election', _external=True))
 
-        # 2. Tüm kontroller başarılı, seçim oluşturma işlemini başlat
+        # Seçim oluştur
         election = Election(
             title=title,
             description=description,
@@ -426,37 +395,28 @@ def create_election():
             option = Option(description=option_desc, election_id=election.id)
             db.session.add(option)
 
-        # Seçmenleri kaydet
-        for tc, name, surname, email in zip(voter_tcs, voter_names, voter_surnames, voter_emails):
-            voter = Voter.query.filter_by(tc=tc).first()
-            face_data = tc_face_map.get(tc)
+        # Seçmenleri ekle
+        for user in valid_users:
+            vote_token = create_vote_token_entry(user.id, election.id)
+            send_vote_link(user, vote_token, election)
 
-            if voter:
-                # Mevcut seçmen bilgilerini güncelle
-                voter.name = name
-                voter.surname = surname
-                voter.email = email
-                if face_data:
-                    if voter.face_id:
-                        face_recognition_entry = FaceRecognition.query.get(voter.face_id)
-                        face_recognition_entry.encoding = face_data["encoding"]
-                        face_recognition_entry.image_path = face_data["photo_path"]
-                    else:
-                        face_id = save_face_encoding(face_data["encoding"], face_data["photo_path"])
-                        voter.face_id = face_id
-            else:
-                # Yeni seçmen oluştur
-                face_id = save_face_encoding(face_data["encoding"], face_data["photo_path"]) if face_data else None
-                voter = Voter(tc=tc, name=name, surname=surname, email=email, face_id=face_id)
-                db.session.add(voter)
-
-            db.session.commit()
-
-            # Oylama token'ı oluştur ve e-posta gönder
-            token = create_vote_token_entry(voter.id, election.id)
-            send_vote_link(voter, token, election)
-
+        db.session.commit()
         flash('Oylama başarıyla oluşturuldu!', "success")
         return redirect(url_for("core.my_elections", _external=True))
 
     return render_template("core/index.html")
+
+@core_bp.route('/get_user_info', methods=['POST'])
+@login_required
+def get_user_info():
+    tc = request.json.get('tc')
+    user = User.query.filter_by(tc=tc).first()
+
+    if not user or not user.is_mail_approved or not user.is_face_approved:
+        return jsonify({'error': f"{tc} kimlik numarasına sahip onaylı bir kullanıcı bulunamadı."}), 400
+
+    return jsonify({
+        'name': user.name,
+        'surname': user.surname,
+        'email': user.email
+    })

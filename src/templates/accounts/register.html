@@ -1,54 +1,115 @@
 {% extends "_base.html" %}
 
 {% block content %}
-
 <div class="row">
   <div class="col-md-4"></div>
   <div class="col-md-4">
     <main class="form-signin w-100 m-auto">
       <form role="form" method="post" action="">
-        {{ form.csrf_token }}
         <h1 class="h3 mb-3 fw-normal text-center">Lütfen Kayıt olun</h1>
 
+        <!-- Email -->
         <div class="form-floating">
-          {{ form.email(placeholder="email", class="form-control mb-2") }}
-          {{ form.email.label }}
-          {% if form.email.errors %}
-            {% for error in form.email.errors %}
-              <div class="alert alert-danger" role="alert">
-                {{ error }}
-              </div>
-            {% endfor %}
-          {% endif %}
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            class="form-control mb-2"
+            required
+          />
+          <label for="email">Email</label>
         </div>
+
+        <!-- Şifre -->
         <div class="form-floating">
-          {{ form.password(placeholder="password", class="form-control mb-2") }}
-          {{ form.password.label }}
-          {% if form.password.errors %}
-            {% for error in form.password.errors %}
-              <div class="alert alert-danger" role="alert">
-                {{ error }}
-              </div>
-            {% endfor %}
-          {% endif %}
+          <input
+            type="password"
+            name="password"
+            placeholder="Şifre"
+            class="form-control mb-2"
+            required
+          />
+          <label for="password">Şifre</label>
         </div>
+
+        <!-- Şifre Tekrar -->
         <div class="form-floating">
-          {{ form.confirm(placeholder="Confirm Password", class="form-control mb-2") }}
-          {{ form.confirm.label }}
-          {% if form.confirm.errors %}
-            {% for error in form.confirm.errors %}
-              <div class="alert alert-danger" role="alert">
-                {{ error }}
-              </div>
-            {% endfor %}
-          {% endif %}
+          <input
+            type="password"
+            name="confirm_password"
+            placeholder="Şifre Tekrar"
+            class="form-control mb-2"
+            required
+          />
+          <label for="confirm_password">Şifre Tekrar</label>
         </div>
-        <button class="w-100 btn btn-lg btn-primary" type="submit">Kayıt ol</button>
-        <p class="text-center mt-3">Zaten Kayıtlı mısınız? <a href="{{ url_for('accounts.login') }}">Şimdi Giriş yapın</a></p>
+
+        <!-- Seçmen Hesabı Checkbox -->
+        <div class="form-check mb-2">
+          <input
+            class="form-check-input"
+            type="checkbox"
+            id="is_voter"
+            name="is_voter"
+            onclick="toggleVoterFields()"
+          />
+          <label class="form-check-label" for="is_voter">
+            Seçmen hesabı oluştur
+          </label>
+        </div>
+
+        <!-- Seçmen Alanları -->
+        <div id="voter-fields" style="display: none;">
+          <div class="form-floating">
+            <input
+              type="text"
+              name="tc"
+              placeholder="TC Kimlik Numarası"
+              class="form-control mb-2"
+            />
+            <label for="tc">TC Kimlik Numarası</label>
+          </div>
+
+          <div class="form-floating">
+            <input
+              type="text"
+              name="name"
+              placeholder="İsim"
+              class="form-control mb-2"
+            />
+            <label for="name">İsim</label>
+          </div>
+
+          <div class="form-floating">
+            <input
+              type="text"
+              name="surname"
+              placeholder="Soyisim"
+              class="form-control mb-2"
+            />
+            <label for="surname">Soyisim</label>
+          </div>
+        </div>
+
+        <!-- Kayıt Ol Butonu -->
+        <button class="w-100 btn btn-lg btn-primary" type="submit">
+          Kayıt Ol
+        </button>
+        <p class="text-center mt-3">
+          Zaten Kayıtlı mısınız?
+          <a href="{{ url_for('accounts.login') }}">Şimdi Giriş yapın</a>
+        </p>
       </form>
     </main>
   </div>
   <div class="col-md-4"></div>
 </div>
 
+<script>
+  function toggleVoterFields() {
+    const isVoter = document.getElementById("is_voter").checked;
+    const voterFields = document.getElementById("voter-fields");
+    voterFields.style.display = isVoter ? "block" : "none";
+  }
+</script>
 {% endblock %}

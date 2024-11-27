@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from flask_mail import Message
 from flask import current_app, url_for
 from threading import Thread
-from src.accounts.models import db,VoteToken, Voter, OptionCount, Election, Votes, Option
+from src.accounts.models import db,VoteToken, User, OptionCount, Election, Votes, Option
 import logging
 from datetime import datetime, timezone
 from src.utils.email_utils import send_results_email

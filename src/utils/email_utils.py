@@ -1,7 +1,7 @@
 from flask_mail import Message
 from flask import current_app, url_for
 from threading import Thread
-from src.accounts.models import VoteToken, Voter
+from src.accounts.models import VoteToken, User
 from src.utils.encrypt_election_id import encrypt_id
 import logging
 
@@ -69,7 +69,7 @@ def send_results_email(election):
         votetokens = VoteToken.query.filter_by(election_id=election.id).all()
 
         for token in votetokens:
-            voter = Voter.query.get(token.voter_id)
+            voter = User.query.get(token.user_id)
             if voter:
                 try:
                     encrypted_election_id = encrypt_id(token.election_id)

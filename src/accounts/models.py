@@ -6,7 +6,6 @@ from src import bcrypt, db
 
 
 class User(UserMixin, db.Model):
-
     __tablename__ = "user"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -14,31 +13,33 @@ class User(UserMixin, db.Model):
     password = db.Column(db.String, nullable=False)
     created_on = db.Column(db.DateTime, nullable=False)
     is_admin = db.Column(db.Boolean, nullable=False, default=False)
-    is_approved = db.Column(db.Boolean, nullable=False, default=False) 
-
-    def __init__(self, email, password, is_admin=False, is_approved=False):
-        self.email = email
-        self.password = bcrypt.generate_password_hash(password).decode('utf-8')
-        self.created_on = datetime.now()
-        self.is_admin = is_admin
-        self.is_approved = is_approved
-
-    def __repr__(self):
-        return f"<email {self.email}>"
-
-class Voter(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    tc = db.Column(db.String(11), unique=True, nullable=False)
-    name = db.Column(db.String(50), nullable=False)
-    surname = db.Column(db.String(50), nullable=False)
-    email = db.Column(db.String(100), nullable=False)
+    is_mail_approved = db.Column(db.Boolean, nullable=False, default=False)
+    is_face_approved = db.Column(db.Boolean, nullable=False, default=False)
+    tc = db.Column(db.String(11), unique=True, nullable=True)
+    name = db.Column(db.String(50), nullable=True)
+    surname = db.Column(db.String(50), nullable=True)
     face_id = db.Column(db.Integer, db.ForeignKey('face_recognition.id'), nullable=True)
 
     face_recognition = db.relationship(
-        'FaceRecognition', 
-        backref=db.backref('voter', lazy=True),
+        'FaceRecognition',
+        backref=db.backref('user', lazy=True),
         foreign_keys=[face_id]
     )
+
+    def __init__(self, email, password, tc=None, name=None, surname=None, is_admin=False, is_mail_approved=False, is_face_approved=False):
+        self.email = email
+        self.password = bcrypt.generate_password_hash(password).decode('utf-8')
+        self.created_on = datetime.now()
+        self.tc = tc
+        self.name = name
+        self.surname = surname
+        self.is_admin = is_admin
+        self.is_mail_approved = is_mail_approved
+        self.is_face_approved = is_face_approved
+
+    def __repr__(self):
+        return f"<User {self.email}>"
+
 
 
 class FaceRecognition(db.Model):
@@ -68,7 +69,7 @@ class Option(db.Model):
 
 class Votes(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    voter_id = db.Column(db.Integer, db.ForeignKey('voter.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     election_id = db.Column(db.Integer, db.ForeignKey('election.id'), nullable=False)
     option_id = db.Column(db.Integer, db.ForeignKey('option.id'), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.now(timezone.utc))
@@ -82,10 +83,9 @@ class OptionCount(db.Model):
 class VoteToken(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     token = db.Column(db.String(256), unique=True, nullable=False)
-    voter_id = db.Column(db.Integer, db.ForeignKey('voter.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     election_id = db.Column(db.Integer, db.ForeignKey('election.id'), nullable=False)
     used = db.Column(db.Boolean, default=False, nullable=False)
-    voter = db.relationship('Voter', backref=db.backref('tokens', lazy=True))
     election = db.relationship('Election', backref=db.backref('tokens', lazy=True))
 
 class PasswordResetToken(db.Model):

@@ -134,17 +134,62 @@ def register():
     if current_user.is_authenticated:
         flash("Zaten kayıt oldunuz.", "info")
         return redirect(url_for("core.create_election", _external=True))
-    form = RegisterForm(request.form)
-    if form.validate_on_submit():
-        user = User(email=form.email.data, password=form.password.data)
+
+    if request.method == "POST":
+        # Formdan gelen verileri al
+        email = request.form.get("email")
+        password = request.form.get("password")
+        confirm_password = request.form.get("confirm_password")
+        tc = request.form.get("tc")
+        name = request.form.get("name")
+        surname = request.form.get("surname")
+        is_voter = request.form.get("is_voter")  # Checkbox için
+
+        # Doğrulama
+        errors = []
+
+        if not email or not password or not confirm_password:
+            errors.append("Email ve şifre alanları doldurulmalıdır.")
+
+        if password != confirm_password:
+            errors.append("Şifreler uyuşmuyor.")
+
+        if User.query.filter_by(email=email).first():
+            errors.append("Bu email zaten kayıtlı.")
+
+        if is_voter and (not tc or not name or not surname):
+            errors.append("Seçmen hesapları için TC, isim ve soyisim zorunludur.")
+
+        if len(password) < 6 or len(password) > 25:
+            errors.append("Şifre 6 ile 25 karakter arasında olmalıdır.")
+
+        if len(tc or "") != 11 and is_voter:
+            errors.append("TC kimlik numarası 11 haneli olmalıdır.")
+
+        if errors:
+            for error in errors:
+                flash(error, "danger")
+            return render_template("accounts/register.html")
+
+        # Kullanıcı oluştur
+        user = User(
+            email=email,
+            password=password,
+            tc=tc if is_voter else None,
+            name=name if is_voter else None,
+            surname=surname if is_voter else None,
+        )
         db.session.add(user)
         db.session.commit()
+
+        # Email doğrulama tokeni oluştur ve gönder
         token = create_email_verification_entry(user.id)
-        send_verify_email(user,token)
-        flash("Mailinize gelen onay linkine tıklayınız.Hoşgeldiniz!", "success")
+        send_verify_email(user, token)
+
+        flash("Mailinize gelen onay linkine tıklayınız. Hoşgeldiniz!", "success")
         return redirect(url_for("accounts.login", _external=True))
 
-    return render_template("accounts/register.html", form=form)
+    return render_template("accounts/register.html")
 
 @accounts_bp.route('/verify_email/<token>', methods=['GET'])
 def verify_email(token):
@@ -157,10 +202,10 @@ def verify_email(token):
 
     user = User.query.get(user_id)
     if user:
-        if user.is_approved:
+        if user.is_mail_approved:
             flash('Hesabınız zaten doğrulanmış.', 'info')
             return redirect(url_for('accounts.login', _external=True))
-        user.is_approved = True
+        user.is_mail_approved = True
         db.session.commit()
         flash('Hesabınız başarıyla doğrulandı.', 'success')
         return redirect(url_for('accounts.login', _external=True))
@@ -180,7 +225,7 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
         if user and bcrypt.check_password_hash(user.password, request.form["password"]):
-            if not user.is_approved:
+            if not user.is_mail_approved:
                 flash("Hesabınız henüz doğrulanmış değil.", "warning")
                 resend_url = url_for('accounts.resend_verification', user_id=user.id, _external=True)
                 flash(f"Lütfen hesabınızı doğrulayın. <a href='{resend_url}'>Doğrulama linkini tekrar göndermek için tıklayınız.</a>", 'info')
@@ -204,7 +249,7 @@ def resend_verification(user_id):
         flash('Kullanıcı bulunamadı.', 'danger')
         return redirect(url_for('accounts.login', _external=True))
 
-    if user.is_approved:
+    if user.is_mail_approved:
         flash('Hesabınız zaten doğrulanmış.', 'info')
         return redirect(url_for('accounts.login', _external=True))
 
