@@ -26,20 +26,20 @@ class User(UserMixin, db.Model):
         foreign_keys=[face_id]
     )
 
-    def __init__(self, email, password, tc=None, name=None, surname=None, is_admin=False, is_mail_approved=False, is_face_approved=False):
+    def __init__(self, email, password, tc=None, name=None, surname=None, face_id=None, is_admin=False, is_mail_approved=False, is_face_approved=False):
         self.email = email
         self.password = bcrypt.generate_password_hash(password).decode('utf-8')
         self.created_on = datetime.now()
         self.tc = tc
         self.name = name
         self.surname = surname
+        self.face_id = face_id
         self.is_admin = is_admin
         self.is_mail_approved = is_mail_approved
         self.is_face_approved = is_face_approved
 
     def __repr__(self):
         return f"<User {self.email}>"
-
 
 
 class FaceRecognition(db.Model):

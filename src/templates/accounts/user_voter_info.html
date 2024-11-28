@@ -1,8 +1,142 @@
 {% extends "_base.html" %}
-
 {% block content %}
-<div class="container mt-4">
-  <h1>Seçmen Bilgilerim</h1>
-  <p>Ben bir seçmenim.</p>
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <!-- Profil Kartı -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body text-center">
+                    <!-- Profil Fotoğrafı -->
+                    <div class="profile-photo mb-3">
+                        <img
+                        src="/{{ user.face_recognition.image_path }}" 
+                        alt="Profil Fotoğrafı" 
+                        class="rounded-circle img-thumbnail" 
+                        style="width: 150px; height: 150px; object-fit: cover;">
+                    </div>
+                    <!-- Yüz Doğrulama Durumu -->
+                    <h5 class="mb-4">
+                        Yüz doğrulama durumu:
+                        <strong class="{{ 'text-success' if user.is_face_approved else 'text-danger' }}">
+                            {{ "Onaylanmış" if user.is_face_approved else "Onaylanmamış" }}
+                        </strong>
+                    </h5>
+                    <!-- Kullanıcı Bilgileri -->
+                    <p><strong>Email:</strong> {{ user.email }}</p>
+                    {% if user.tc %}
+                        <p><strong>TC Kimlik Numarası:</strong> {{ user.tc }}</p>
+                        <p><strong>İsim:</strong> {{ user.name }}</p>
+                        <p><strong>Soyisim:</strong> {{ user.surname }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- E-posta Değişikliği Kartı -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title text-center">E-posta Değiştir</h5>
+                    <form method="POST">
+                        {{ email_form.hidden_tag() }}
+                        <div class="mb-3">
+                            {{ email_form.email.label(class="form-label") }}
+                            {{ email_form.email(class="form-control", size=32) }}
+                        </div>
+                        <button type="submit" name="email" class="btn btn-primary w-100">Onay bağlantısını gönder</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Şifre Değişikliği Kartı -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title text-center">Şifre Değiştir</h5>
+                    <form method="POST">
+                        {{ password_form.hidden_tag() }}
+                        <div class="mb-3">
+                            {{ password_form.current_password.label(class="form-label") }}
+                            {{ password_form.current_password(class="form-control") }}
+                            {% if password_form.current_password.errors %}
+                                <div class="alert alert-danger">
+                                    {% for error in password_form.current_password.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            {{ password_form.new_password.label(class="form-label") }}
+                            {{ password_form.new_password(class="form-control") }}
+                            {% if password_form.new_password.errors %}
+                                <div class="alert alert-danger">
+                                    {% for error in password_form.new_password.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            {{ password_form.confirm_password.label(class="form-label") }}
+                            {{ password_form.confirm_password(class="form-control") }}
+                            {% if password_form.confirm_password.errors %}
+                                <div class="alert alert-danger">
+                                    {% for error in password_form.confirm_password.errors %}
+                                        <p>{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <button type="submit" name="password" class="btn btn-success w-100">Şifre değiştir</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+
+<style>
+  /* Genel Stil */
+  .container {
+    max-width: 800px;
+  }
+
+  .card {
+    border-radius: 10px;
+    border: none;
+    background: #ffffff;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .profile-photo img {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+  }
+
+  .card-body h5 {
+    font-size: 1.2rem;
+  }
+
+  .text-success {
+    color: #28a745 !important;
+  }
+
+  .text-danger {
+    color: #dc3545 !important;
+  }
+
+  .btn-primary, .btn-success {
+    padding: 10px;
+    font-size: 1rem;
+    border-radius: 5px;
+    transition: background-color 0.3s ease-in-out;
+  }
+
+  .btn-primary:hover {
+    background-color: #0056b3;
+  }
+
+  .btn-success:hover {
+    background-color: #218838;
+  }
+</style>
 {% endblock %}

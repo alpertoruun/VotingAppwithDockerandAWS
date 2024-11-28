@@ -6,6 +6,8 @@ from src.utils.password_token_utils import create_password_reset_entry, verify_r
 from src.utils.email_validator import validate_email, EmailNotValidError
 from src.utils.update_email_token_utils import create_update_email_entry, verify_update_token
 from src.utils.verify_email_utils import create_email_verification_entry, verify_email_token
+from src.utils.face_recognition import get_face_encoding, save_face_encoding, save_photo
+
 
 
 
@@ -49,7 +51,6 @@ def user_info(user_id):
     email_form = EmailChangeForm()
     password_form = PasswordChangeForm()
 
-    # Kullanıcı seçmen mi kontrolü
     is_voter = bool(user.tc)
 
     if email_form.validate_on_submit() and 'email' in request.form:
@@ -75,9 +76,8 @@ def user_info(user_id):
             flash('Mevcut şifre yanlış.', 'error')
         return redirect(url_for('accounts.user_info', user_id=user_id, _external=True))
 
-    # Şablon seçimleri
     if is_voter:
-        return render_template('accounts/user_voter_info.html', user=user)
+        return render_template('accounts/user_voter_info.html', user=user, email_form=email_form, password_form=password_form)
     else:
         return render_template('accounts/user_info.html', user=user, email_form=email_form, password_form=password_form)
 
@@ -151,6 +151,7 @@ def register():
         name = request.form.get("name")
         surname = request.form.get("surname")
         is_voter = request.form.get("is_voter")  # Checkbox için
+        voter_photo = request.files.get("voterPhoto")  # Fotoğraf dosyasını al
 
         # Doğrulama
         errors = []
@@ -167,6 +168,9 @@ def register():
         if is_voter and (not tc or not name or not surname):
             errors.append("Seçmen hesapları için TC, isim ve soyisim zorunludur.")
 
+        if is_voter and not voter_photo:
+            errors.append("Seçmen hesapları için yüz fotoğrafı zorunludur.")
+
         if len(password) < 6 or len(password) > 25:
             errors.append("Şifre 6 ile 25 karakter arasında olmalıdır.")
 
@@ -178,6 +182,18 @@ def register():
                 flash(error, "danger")
             return render_template("accounts/register.html")
 
+        # Fotoğrafı kaydet ve encoding işlemini gerçekleştir
+        face_id = None
+        if is_voter and voter_photo:
+            photo_path = save_photo(voter_photo)  # Fotoğrafı kaydet
+            face_encoding = get_face_encoding(photo_path)  # Encoding işlemini yap
+
+            if face_encoding is None:
+                flash("Yüklenen fotoğrafta yüz algılanamadı.", "danger")
+                return render_template("accounts/register.html")
+
+            face_id = save_face_encoding(face_encoding, photo_path)  # Encoding'i kaydet
+
         # Kullanıcı oluştur
         user = User(
             email=email,
@@ -185,6 +201,7 @@ def register():
             tc=tc if is_voter else None,
             name=name if is_voter else None,
             surname=surname if is_voter else None,
+            face_id=face_id,  # Face ID'yi kaydediyoruz
         )
         db.session.add(user)
         db.session.commit()
