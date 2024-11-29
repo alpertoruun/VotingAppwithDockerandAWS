@@ -93,7 +93,8 @@ from flask import send_from_directory
 @core_bp.route('/static/uploads/<path:filename>')
 @login_required
 def custom_static(filename):
-    uploads_dir = "/mnt/c/Users/alper.torun/Desktop/files/VotingAppwithDockerandAWS/static/uploads"
+    current_dir = os.getcwd()
+    uploads_dir = os.path.join(current_dir, "static", "uploads")
     return send_from_directory(uploads_dir, filename)
 
 @core_bp.route('/my_elections')
