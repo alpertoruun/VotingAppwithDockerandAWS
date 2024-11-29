@@ -17,9 +17,15 @@
                     <!-- Yüz Doğrulama Durumu -->
                     <h5 class="mb-4">
                         Yüz doğrulama durumu:
-                        <strong class="{{ 'text-success' if user.is_face_approved else 'text-danger' }}">
-                            {{ "Onaylanmış" if user.is_face_approved else "Onaylanmamış" }}
-                        </strong>
+                        {% if user.is_face_approved %}
+                            <strong class="text-success">Onaylanmış</strong>
+                        {% else %}
+                            <strong class="text-danger">Onaylanmamış</strong>
+                            <br>
+                            <a href="{{ url_for('core.face_approve', encrypted_user_id=encrypt_id(user.id)) }}" class="text-primary">
+                                Fotoğrafınızı doğrulamak için tıklayınız
+                            </a>
+                        {% endif %}
                     </h5>
                     <!-- Kullanıcı Bilgileri -->
                     <p><strong>Email:</strong> {{ user.email }}</p>

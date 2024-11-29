@@ -123,3 +123,5 @@ class VerifyMailToken(db.Model):
 
     def __repr__(self):
         return f'<VerifyMailToken {self.token}>'
+
+

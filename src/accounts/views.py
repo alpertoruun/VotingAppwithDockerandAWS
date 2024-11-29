@@ -7,6 +7,8 @@ from src.utils.email_validator import validate_email, EmailNotValidError
 from src.utils.update_email_token_utils import create_update_email_entry, verify_update_token
 from src.utils.verify_email_utils import create_email_verification_entry, verify_email_token
 from src.utils.face_recognition import get_face_encoding, save_face_encoding, save_photo
+from src.utils.encrypt_election_id import encrypt_id, decrypt_id
+
 
 
 
