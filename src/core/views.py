@@ -283,35 +283,7 @@ def blink_verification():
             "message": "Göz kırpma doğrulaması sırasında bir hata oluştu."
         }), 500
 
-@core_bp.route('/blink_approve_verification', methods=['POST'])
-def blink_approve_verification():
-    """
-    Göz kırpma doğrulama endpoint'i
-    """
-    try:
-        data = request.get_json()
-        blink_count = data.get('blink_count', 0)
-        token = data.get('token')
-        
-        if blink_count >= 3:  # Gerekli göz kırpma sayısına ulaşıldı
-            encrypted_token = encrypt_id(token)
-            return jsonify({
-                "success": True,
-                "message": "Göz kırpma doğrulaması başarılı!",
-                "redirect_url": url_for("accounts.user_info", user_id=user.id, _external=True)
-            }), 200
-        else:
-            return jsonify({
-                "success": False,
-                "message": f"Göz kırpma sayısı yetersiz. Mevcut: {blink_count}/3"
-            }), 400
 
-    except Exception as e:
-        logging.error(f"Blink verification error: {str(e)}")
-        return jsonify({
-            "success": False,
-            "message": "Göz kırpma doğrulaması sırasında bir hata oluştu."
-        }), 500
 
 @core_bp.route('/vote/<encrypted_token>', methods=['GET', 'POST'])
 def vote(encrypted_token):
@@ -365,26 +337,20 @@ def vote(encrypted_token):
 def face_approve(encrypted_user_id):
     user_id = decrypt_id(encrypted_user_id)
     user = User.query.get(user_id)
+    
     if current_user.id != user.id:
         flash('Bu sayfayı görüntüleme yetkiniz yok.', 'warning')
         return redirect(url_for('core.my_elections', _external=True))
+    
     if not user:
         flash("Kullanıcı bulunamadı.", "danger")
         return redirect(url_for("core.create_election"))
-        
 
     if user.is_face_approved:
         flash("Kullanıcı yüzü zaten doğrulanmış.", "info")
         return redirect(url_for("accounts.user_info", user_id=user_id, _external=True))
 
-
     if request.method == 'POST':
-        voter = User.query.get(user_id)
-        face_record = FaceRecognition.query.get(voter.face_id)
-
-        if not face_record:
-            return jsonify({"success": False, "message": "Yüz verisi bulunamadı."}), 400
-
         image_file = request.files.get('image')
         if not image_file:
             return jsonify({"success": False, "message": "Görüntü yüklenemedi."}), 400
@@ -392,47 +358,95 @@ def face_approve(encrypted_user_id):
         input_image = face_recognition.load_image_file(image_file)
         input_encoding = face_recognition.face_encodings(input_image)
         
-        # YENİ: Yüz landmarks tespiti
         face_landmarks = face_recognition.face_landmarks(input_image)
 
         if len(input_encoding) == 0 or len(face_landmarks) == 0:
             return jsonify({"success": False, "message": "Yüz algılanamadı."}), 400
 
-        # YENİ: Göz landmark'larını al
+        # Göz landmark'larını al
         landmarks = face_landmarks[0]
         left_eye = landmarks['left_eye']
         right_eye = landmarks['right_eye']
 
-        # YENİ: Göz açıklık oranını hesapla
+        # Göz açıklık oranını hesapla
         def calculate_ear(eye_points):
-            # Dikey mesafeler
             v1 = np.linalg.norm(np.array(eye_points[1]) - np.array(eye_points[5]))
             v2 = np.linalg.norm(np.array(eye_points[2]) - np.array(eye_points[4]))
-            # Yatay mesafe
             h = np.linalg.norm(np.array(eye_points[0]) - np.array(eye_points[3]))
-            # EAR hesapla
             ear = (v1 + v2) / (2.0 * h)
             return ear
 
-        # YENİ: Her iki göz için EAR hesapla
         left_ear = calculate_ear(left_eye)
         right_ear = calculate_ear(right_eye)
         avg_ear = (left_ear + right_ear) / 2.0
         EAR_THRESHOLD = 0.25
 
-        known_encoding = np.frombuffer(face_record.encoding)
-        match = face_recognition.compare_faces([known_encoding], input_encoding[0])
+        # Mevcut yüz kaydını al ve karşılaştır
+        face_record = FaceRecognition.query.get(user.face_id)
+        if not face_record:
+            return jsonify({"success": False, "message": "Yüz verisi bulunamadı."}), 400
 
-        # Eğer eşleşme varsa success olarak döndür, yoksa başarısız olarak işaretle
+        known_encoding = np.frombuffer(face_record.encoding)
+        match = face_recognition.compare_faces([known_encoding], input_encoding[0], tolerance=0.7)
+
         if match[0]:
+            # Eğer eşleşme varsa kullanıcının face_approved durumunu güncelle
             user.is_face_approved = True
             db.session.commit()
-            flash("Yüz doğrulamanız başarıyla tamamlandı.", "success")
-            return redirect(url_for("accounts.user_info", user_id=user.id))
+            
+            return jsonify({
+                "success": True,
+                "ear_value": float(avg_ear),
+                "eyes_closed": avg_ear < EAR_THRESHOLD,
+                "message": "Yüz doğrulama başarılı!",
+                "verification_stage": "face_verified"
+            }), 200
         else:
-            flash("Yüz doğrulama başarısız. Lütfen tekrar deneyin.", "danger")
+            return jsonify({"success": False, "message": "Yüz doğrulama başarısız!"}), 400
 
-    return render_template('core/face_control.html', token=encrypted_user_id)
+    return render_template('core/face_approve.html', user=user)
+@core_bp.route('/blink_verification_register', methods=['POST'])
+@login_required
+def blink_verification_register():
+    """
+    Göz kırpma doğrulama endpoint'i - Kayıt için
+    """
+    try:
+        data = request.get_json()
+        blink_count = data.get('blink_count', 0)
+        encrypted_user_id = data.get('encrypted_user_id')
+        
+        if not encrypted_user_id:
+            return jsonify({"success": False, "message": "Kullanıcı ID'si gerekli"}), 400
+            
+        user_id = decrypt_id(encrypted_user_id)
+        user = User.query.get(user_id)
+        
+        if not user or current_user.id != user.id:
+            return jsonify({"success": False, "message": "Geçersiz kullanıcı"}), 400
+        
+        if blink_count >= 3:  # Gerekli göz kırpma sayısına ulaşıldı
+            user.is_face_approved = True
+            db.session.commit()
+            
+            return jsonify({
+                "success": True,
+                "message": "Göz kırpma doğrulaması başarılı!",
+                "redirect_url": url_for("accounts.user_info", user_id=user_id, _external=True)
+            }), 200
+        else:
+            return jsonify({
+                "success": False,
+                "message": f"Göz kırpma sayısı yetersiz. Mevcut: {blink_count}/3"
+            }), 400
+
+    except Exception as e:
+        db.session.rollback()
+        logging.error(f"Blink verification error: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": "Göz kırpma doğrulaması sırasında bir hata oluştu."
+        }), 500        
 
 
 

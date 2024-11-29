@@ -1,0 +1,492 @@
+{% extends "_base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="row">
+    <div class="col">
+      <div class="card shadow">
+        <div class="card-body text-center">
+          <h2 class="mb-4">Yüz Kaydı</h2>
+          
+          <!-- Durum Göstergesi -->
+          <div id="statusIndicator" class="alert alert-info mb-3">
+            Kamera başlatılıyor...
+          </div>
+          
+          <!-- İşlem Adımları -->
+          <div class="steps mb-4">
+            <div class="d-flex justify-content-center align-items-center">
+              <div id="step1" class="step active">
+                <div class="step-circle">1</div>
+                <div class="step-text">Yüz Tarama</div>
+              </div>
+              <div class="step-line"></div>
+              <div id="step2" class="step">
+                <div class="step-circle">2</div>
+                <div class="step-text">Göz Kırpma</div>
+              </div>
+              <div class="step-line"></div>
+              <div id="step3" class="step">
+                <div class="step-circle">3</div>
+                <div class="step-text">Tamamlandı</div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Kamera Görünümü -->
+          <div class="position-relative mb-3">
+            <video id="video" autoplay playsinline class="border rounded" width="320" height="240"></video>
+            <canvas id="outputCanvas" class="position-absolute top-0 start-0" width="320" height="240"></canvas>
+            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center">
+              <div class="border border-2 border-primary rounded-circle" style="width: 200px; height: 200px; border-style: dashed !important;"></div>
+            </div>
+          </div>
+
+          <!-- Göz Kırpma Sayacı -->
+          <div id="blinkCounter" class="mb-3 fw-bold">
+            0 / 3 göz kırpma
+          </div>
+
+          <!-- İlerleme Çubuğu -->
+          <div class="progress mb-3" style="height: 20px;">
+            <div id="verificationProgress" class="progress-bar progress-bar-striped progress-bar-animated" 
+                 role="progressbar" style="width: 0%"></div>
+          </div>
+
+          <!-- Gizli Canvas ve Form -->
+          <canvas id="canvas" style="display: none;"></canvas>
+          <form id="faceApproveForm" 
+                action="{{ url_for('core.face_approve',  encrypted_user_id=encrypt_id(user.id)) }}" 
+                method="post" 
+                enctype="multipart/form-data" 
+                style="display: none;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="file" id="imageInput" name="image" accept="image/*">
+          </form>
+
+          <!-- Yardım Metni -->
+          <div class="mt-3 text-muted">
+            <small>
+              * Yüzünüzü daire içinde tutun ve kameraya düz bakın.<br>
+              * İşlem sırasında hareket etmeyin.<br>
+              * Yüz taraması tamamlandıktan sonra 3 kez göz kırpmanız istenecektir.
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MediaPipe Kütüphaneleri -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+
+<style>
+.steps {
+  margin: 20px 0;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 1;
+}
+
+.step-circle {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #e9ecef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 5px;
+  border: 2px solid #dee2e6;
+}
+
+.step.active .step-circle {
+  background-color: #007bff;
+  color: white;
+  border-color: #0056b3;
+}
+
+.step-line {
+  width: 100px;
+  height: 2px;
+  background-color: #dee2e6;
+  margin: 0 10px;
+  margin-top: 15px;
+}
+
+.step.completed .step-circle {
+  background-color: #28a745;
+  border-color: #1e7e34;
+}
+
+.step-text {
+  font-size: 0.875rem;
+  color: #6c757d;
+}
+
+.step.active .step-text {
+  color: #007bff;
+  font-weight: bold;
+}
+
+.step.completed .step-text {
+  color: #28a745;
+}
+</style>
+
+<script>
+  const state = {
+    captureCount: 0,
+    matches: 0,
+    blinkCount: 0,
+    lastEyeState: 'open',
+    potentialBlink: false,
+    faceVerified: false,
+    EYE_AR_THRESH: 0.25,
+    EYE_AR_CONSEC_FRAMES: 1,
+    counter: 0,
+    total: 0
+  };
+
+  const CONFIG = {
+    maxCaptures: 3,
+    requiredMatches: 2,
+    requiredBlinks: 3,
+    captureInterval: 1500,
+    blinkTimeout: 15000,
+    blinkMinDuration: 100,
+    blinkMaxDuration: 300
+  };
+
+  // MediaPipe için göz landmark indeksleri
+  const LEFT_EYE_INDICES = [33, 160, 158, 133, 153, 144];
+  const RIGHT_EYE_INDICES = [362, 385, 387, 263, 373, 380];
+
+  const elements = {
+    video: document.getElementById('video'),
+    canvas: document.getElementById('canvas'),
+    outputCanvas: document.getElementById('outputCanvas'),
+    form: document.getElementById('faceApproveForm'),
+    imageInput: document.getElementById('imageInput'),
+    progress: document.getElementById('verificationProgress'),
+    status: document.getElementById('statusIndicator'),
+    blinkCounter: document.getElementById('blinkCounter'),
+    step1: document.getElementById('step1'),
+    step2: document.getElementById('step2'),
+    step3: document.getElementById('step3')
+  };
+
+  let faceMesh;
+  let camera;
+
+  // MediaPipe kurulumu
+  async function setupMediaPipe() {
+    faceMesh = new FaceMesh({
+      locateFile: (file) => {
+        return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+      }
+    });
+
+    faceMesh.setOptions({
+      maxNumFaces: 1,
+      refineLandmarks: true,
+      minDetectionConfidence: 0.5,
+      minTrackingConfidence: 0.5
+    });
+
+    faceMesh.onResults(onResults);
+
+    camera = new Camera(elements.video, {
+      onFrame: async () => {
+        await faceMesh.send({image: elements.video});
+      },
+      width: 640,
+      height: 480
+    });
+
+    await camera.start();
+    updateStatus('Yüz taraması başlıyor...', 'info');
+    startCapturing();
+  }
+
+  // Kamera başlatma
+  navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+      elements.video.srcObject = stream;
+      setupMediaPipe();
+    })
+    .catch(error => {
+      console.error("Kameraya erişim sağlanamadı:", error);
+      updateStatus('Kameraya erişim sağlanamadı!', 'danger');
+    });
+
+  function startCapturing() {
+    state.captureCount = 0;
+    state.matches = 0;
+    state.redirectUrl = null;
+    
+    const captureInterval = setInterval(() => {
+      if (!state.faceVerified && state.captureCount < CONFIG.maxCaptures) {
+        captureImage();
+        state.captureCount++;
+      } else {
+        clearInterval(captureInterval);
+        if (!state.faceVerified) {
+          evaluateResults();
+        }
+      }
+    }, CONFIG.captureInterval);
+  }
+
+  function captureImage() {
+    const context = elements.canvas.getContext('2d');
+    elements.canvas.width = elements.video.videoWidth;
+    elements.canvas.height = elements.video.videoHeight;
+    context.drawImage(elements.video, 0, 0);
+
+    elements.canvas.toBlob(blob => {
+      const file = new File([blob], `capture_${state.captureCount}.jpg`, { type: "image/jpeg" });
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      elements.imageInput.files = dataTransfer.files;
+
+      const formData = new FormData(elements.form);
+
+      fetch(elements.form.action, {
+        method: "POST",
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success === true) {
+          state.matches++;
+          updateProgress();
+
+          if (state.matches >= CONFIG.requiredMatches && !state.faceVerified) {
+            state.faceVerified = true;
+            elements.step1.classList.add('completed');
+            elements.step2.classList.add('active');
+            startBlinkDetection();
+          }
+        }
+      })
+      .catch(error => {
+        console.error("İşlem hatası:", error);
+        updateStatus('Görüntü işleme hatası!', 'warning');
+      });
+    }, 'image/jpeg');
+  }
+
+  function onResults(results) {
+    const ctx = elements.outputCanvas.getContext('2d');
+    ctx.clearRect(0, 0, elements.outputCanvas.width, elements.outputCanvas.height);
+
+    if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+      const landmarks = results.multiFaceLandmarks[0];
+      
+      if (!state.faceVerified) {
+        captureAndVerify();
+        return;
+      }
+
+      if (state.faceVerified) {
+        const leftEAR = calculateEAR(landmarks, LEFT_EYE_INDICES);
+        const rightEAR = calculateEAR(landmarks, RIGHT_EYE_INDICES);
+        const avgEAR = (leftEAR + rightEAR) / 2.0;
+
+        if (avgEAR < state.EYE_AR_THRESH) {
+          state.counter++;
+          if (!state.potentialBlink) {
+            state.potentialBlink = true;
+          }
+        } else {
+          if (state.potentialBlink && state.counter >= state.EYE_AR_CONSEC_FRAMES) {
+            state.blinkCount++;
+            updateBlinkUI();
+            updateProgress();
+
+            if (state.blinkCount >= CONFIG.requiredBlinks) {
+              onBlinkVerificationSuccess();
+            }
+          }
+          state.counter = 0;
+          state.potentialBlink = false;
+        }
+
+        drawConnectors(ctx, landmarks, FACEMESH_TESSELATION, 
+          {color: '#C0C0C070', lineWidth: 1});
+        drawConnectors(ctx, landmarks, FACEMESH_RIGHT_EYE, 
+          {color: avgEAR < state.EYE_AR_THRESH ? 'red' : 'green', lineWidth: 2});
+        drawConnectors(ctx, landmarks, FACEMESH_LEFT_EYE,
+          {color: avgEAR < state.EYE_AR_THRESH ? 'red' : 'green', lineWidth: 2});
+      }
+    }
+  }
+
+  function calculateEAR(landmarks, indices) {
+    const points = indices.map(index => ({
+      x: landmarks[index].x,
+      y: landmarks[index].y 
+    }));
+
+    const height1 = distance(points[1], points[5]);
+    const height2 = distance(points[2], points[4]);
+    const width = distance(points[0], points[3]);
+    
+    if (width === 0) return 0;
+    return (height1 + height2) / (2.0 * width);
+  }
+
+  function distance(point1, point2) {
+    return Math.sqrt(
+      Math.pow(point1.x - point2.x, 2) +
+      Math.pow(point1.y - point2.y, 2)
+    );
+  }
+
+  function onBlinkVerificationSuccess() {
+    elements.step2.classList.add('completed');
+    elements.step3.classList.add('active');
+    
+    fetch('/blink_verification_register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        blink_count: state.blinkCount,
+        encrypted_user_id: '{{ encrypt_id(user.id) }}'
+    })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        updateStatus('Kayıt başarılı! Yönlendiriliyorsunuz...', 'success');
+        setTimeout(() => {
+          window.location.href = data.redirect_url;
+        }, 1000);
+      } else {
+        updateStatus('Doğrulama başarısız. Tekrar deneyin.', 'warning');
+        resetDetection();
+      }
+    })
+    .catch(error => {
+      console.error("Doğrulama hatası:", error);
+      updateStatus('Doğrulama işlemi sırasında bir hata oluştu.', 'danger');
+    });
+  }
+
+  function updateStatus(message, type = 'info') {
+    elements.status.className = `alert alert-${type} mb-3`;
+    elements.status.textContent = message;
+  }
+
+  function updateProgress() {
+    let progress;
+    if (!state.faceVerified) {
+      progress = (state.matches / CONFIG.requiredMatches) * 50;
+    } else {
+      progress = 50 + (state.blinkCount / CONFIG.requiredBlinks) * 50;
+    }
+    elements.progress.style.width = `${progress}%`;
+  }
+
+  function updateBlinkUI() {
+    elements.blinkCounter.textContent = `${state.blinkCount} / ${CONFIG.requiredBlinks} göz kırpma`;
+  }
+
+  function evaluateResults() {
+    if (state.matches >= CONFIG.requiredMatches) {
+      state.faceVerified = true;
+      startBlinkDetection();
+    } else {
+      updateStatus('Yüz taraması başarısız. Tekrar deneniyor...', 'warning');
+      setTimeout(startCapturing, 1000);
+    }
+  }
+
+  function startBlinkDetection() {
+    updateStatus('Yüz taraması başarılı! Lütfen 3 kez göz kırpın.', 'success');
+    state.blinkCount = 0;
+    updateBlinkUI();
+
+    setTimeout(() => {
+      if (state.blinkCount < CONFIG.requiredBlinks) {
+        updateStatus('Göz kırpma süresi doldu. Tekrar deneyin.', 'warning');
+        resetDetection();
+      }
+    }, CONFIG.blinkTimeout);
+  }
+
+  function resetDetection() {
+    state.captureCount = 0;
+    state.matches = 0;
+    state.blinkCount = 0;
+    state.lastEyeState = 'open';
+    state.potentialBlink = false;
+    state.faceVerified = false;
+    
+    // Adımları sıfırla
+    elements.step1.classList.remove('completed');
+    elements.step2.classList.remove('active', 'completed');
+    elements.step3.classList.remove('active', 'completed');
+    elements.step1.classList.add('active');
+    
+    updateBlinkUI();
+    updateProgress();
+    startCapturing();
+  }
+
+  function captureAndVerify() {
+    if (state.captureCount >= CONFIG.maxCaptures) return;
+
+    const context = elements.canvas.getContext('2d');
+    elements.canvas.width = elements.video.videoWidth;
+    elements.canvas.height = elements.video.videoHeight;
+    context.drawImage(elements.video, 0, 0);
+
+    elements.canvas.toBlob(blob => {
+      const file = new File([blob], `capture_${state.captureCount}.jpg`, { type: "image/jpeg" });
+      const dataTransfer = new DataTransfer();
+      dataTransfer.items.add(file);
+      elements.imageInput.files = dataTransfer.files;
+
+      const formData = new FormData(elements.form);
+
+      fetch(elements.form.action, {
+        method: "POST",
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success === true) {
+          state.matches++;
+          updateProgress();
+
+          if (state.matches >= CONFIG.requiredMatches && !state.faceVerified) {
+            state.faceVerified = true;
+            elements.step1.classList.add('completed');
+            elements.step2.classList.add('active');
+            startBlinkDetection();
+          }
+        }
+      })
+      .catch(error => {
+        console.error("Yüz doğrulama hatası:", error);
+        updateStatus('Görüntü işleme hatası!', 'warning');
+      });
+
+      state.captureCount++;
+    }, 'image/jpeg');
+  }
+</script>
+{% endblock %}
