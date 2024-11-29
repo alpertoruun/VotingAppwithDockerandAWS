@@ -123,3 +123,11 @@ class VerifyMailToken(db.Model):
 
     def __repr__(self):
         return f'<VerifyMailToken {self.token}>'
+
+
+
+class VerifyFaceToken(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(256), unique=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    used = db.Column(db.Boolean, default=False, nullable=False)
