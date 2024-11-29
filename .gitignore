@@ -8,3 +8,4 @@ __pycache__
 env.sh
 /myenv
 /static/uploads
+/migrations
