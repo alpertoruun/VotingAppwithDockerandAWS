@@ -14,7 +14,7 @@ from src.utils.encrypt_election_id import encrypt_id, decrypt_id
 
 
 from src import bcrypt, db
-from src.accounts.models import User, PasswordResetToken, UpdateEmailToken
+from src.accounts.models import User, PasswordResetToken, UpdateEmailToken, FaceRecognition
 
 from .forms import LoginForm, RegisterForm, RequestResetForm, PasswordChangeForm_, EmailChangeForm, PasswordChangeForm
 
@@ -53,35 +53,65 @@ def user_info(user_id):
     email_form = EmailChangeForm()
     password_form = PasswordChangeForm()
 
-    is_voter = bool(user.tc)
+    # Eğer seçmen bilgileri mevcutsa doğrudan `user_voter_info.html`'i döndür
+    if user.tc:
+        return render_template(
+            'accounts/user_voter_info.html',
+            user=user,
+            email_form=email_form,
+            password_form=password_form,
+        )
 
-    if email_form.validate_on_submit() and 'email' in request.form:
-        new_email = email_form.email.data
-        if User.query.filter_by(email=new_email).first():
-            flash('Bu mail adresi zaten kayıtlı.', 'warning')
-            return redirect(url_for('accounts.user_info', user_id=user_id, _external=True))
+    # Kullanıcının seçmen hesabına geçiş talebini işleme
+    if request.method == 'POST' and 'voter' in request.form:
+        tc = request.form.get('tc')
+        name = request.form.get('name')
+        surname = request.form.get('surname')
+        face_photo = request.files.get('face_photo')
 
-        token = create_update_email_entry(user.id, new_email)
-        send_update_email(new_email, token)
-        flash('Mail Gönderildi.', 'success')
-        return redirect(url_for('accounts.user_info', user_id=user_id, _external=True))
+        errors = []
+        if not tc or len(tc) != 11:
+            errors.append("TC kimlik numarası 11 haneli olmalıdır.")
+        if User.query.filter_by(tc=tc).first():
+            errors.append("Bu TC kimlik numarası zaten kullanılıyor.")
+        if not name or not surname:
+            errors.append("İsim ve soyisim alanları doldurulmalıdır.")
+        if not face_photo:
+            errors.append("Yüz fotoğrafı yüklenmelidir.")
 
-    if password_form.validate_on_submit() and 'password' in request.form:
-        if bcrypt.check_password_hash(user.password, password_form.current_password.data):
-            if bcrypt.check_password_hash(user.password, password_form.new_password.data):
-                flash('Yeni şifreniz eskisiyle aynı olamaz.', 'warning')
-                return redirect(url_for('accounts.user_info', user_id=user_id, _external=True))
-            user.password = bcrypt.generate_password_hash(password_form.new_password.data).decode('utf-8')
-            db.session.commit()
-            flash('Şifreniz başarıyla güncellendi.', 'success')
+        if errors:
+            for error in errors:
+                flash(error, 'danger')
         else:
-            flash('Mevcut şifre yanlış.', 'error')
-        return redirect(url_for('accounts.user_info', user_id=user_id, _external=True))
+            # Fotoğraf kaydet ve yüz encoding işlemini gerçekleştir
+            photo_path = save_photo(face_photo)
+            face_encoding = get_face_encoding(photo_path)
 
-    if is_voter:
-        return render_template('accounts/user_voter_info.html', user=user, email_form=email_form, password_form=password_form)
-    else:
-        return render_template('accounts/user_info.html', user=user, email_form=email_form, password_form=password_form)
+            if face_encoding is None or len(face_encoding) == 0:
+                flash("Yüz tanıma işlemi başarısız oldu. Lütfen uygun bir fotoğraf yükleyin.", 'danger')
+            else:
+                # Kullanıcıyı seçmen olarak güncelle
+                face_recognition_entry = FaceRecognition(encoding=face_encoding, image_path=photo_path)
+                db.session.add(face_recognition_entry)
+                db.session.commit()
+
+                user.tc = tc
+                user.name = name
+                user.surname = surname
+                user.face_id = face_recognition_entry.id
+                db.session.commit()
+
+                flash('Seçmen hesabına geçiş başarılı!', 'success')
+                return redirect(url_for('accounts.user_info', user_id=user_id, _external=True))
+
+    # Standart kullanıcı formunu göster
+    return render_template(
+        'accounts/user_info.html',
+        user=user,
+        email_form=email_form,
+        password_form=password_form,
+    )
+
 
 
 

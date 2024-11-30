@@ -3,15 +3,17 @@
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-6">
-            <div class="card shadow-sm mb-4"> <!-- Kart yapısı ve gölge efekti eklendi -->
+            <!-- Kullanıcı Bilgileri -->
+            <div class="card shadow-sm mb-4">
                 <div class="card-header">
                     <h4>Kullanıcı Bilgileri</h4>
                 </div>
                 <div class="card-body">
-                    <p class="mb-2"><strong>Email:</strong> {{ user.email }}</p> <!-- Mail bilgisini güçlendirildi -->
+                    <p class="mb-2"><strong>Email:</strong> {{ user.email }}</p>
                 </div>
             </div>
-            
+
+            <!-- E-posta Değiştir -->
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
                     <h5 class="card-title">E-posta Değiştir</h5>
@@ -26,6 +28,7 @@
                 </div>
             </div>
 
+            <!-- Şifre Değiştir -->
             <div class="card shadow-sm">
                 <div class="card-body">
                     <h5 class="card-title">Şifre Değiştir</h5>
@@ -34,41 +37,90 @@
                         <div class="mb-3">
                             {{ password_form.current_password.label(class="form-label") }}
                             {{ password_form.current_password(class="form-control") }}
-                            {% if password_form.current_password.errors %}
-                                <div class="alert alert-danger">
-                                    {% for error in password_form.current_password.errors %}
-                                        <p>{{ error }}</p>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
                         </div>
                         <div class="mb-3">
                             {{ password_form.new_password.label(class="form-label") }}
                             {{ password_form.new_password(class="form-control") }}
-                            {% if password_form.new_password.errors %}
-                                <div class="alert alert-danger">
-                                    {% for error in password_form.new_password.errors %}
-                                        <p>{{ error }}</p>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
                         </div>
                         <div class="mb-3">
                             {{ password_form.confirm_password.label(class="form-label") }}
                             {{ password_form.confirm_password(class="form-control") }}
-                            {% if password_form.confirm_password.errors %}
-                                <div class="alert alert-danger">
-                                    {% for error in password_form.confirm_password.errors %}
-                                        <p>{{ error }}</p>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
                         </div>
                         <button type="submit" name="password" class="btn btn-success">Şifre değiştir</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Seçmen Hesabına Geçiş -->
+            <div class="card shadow-sm mt-4">
+                <div class="card-body">
+                    <h5 class="card-title">Seçmen Hesabına Geçiş</h5>
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="form-check mb-3">
+                            <input
+                                type="checkbox"
+                                id="is_voter"
+                                class="form-check-input"
+                                name="voter"
+                                onclick="toggleVoterFields()"
+                            />
+                            <label for="is_voter" class="form-check-label">Seçmen hesabına geçiş yapmak istiyorum</label>
+                        </div>
+                        <div id="voter-fields" style="display: none;">
+                            <div class="form-floating mb-3">
+                                <input
+                                    type="text"
+                                    id="tc"
+                                    name="tc"
+                                    placeholder="TC Kimlik Numarası"
+                                    class="form-control"
+                                />
+                                <label for="tc">TC Kimlik Numarası</label>
+                            </div>
+                            <div class="form-floating mb-3">
+                                <input
+                                    type="text"
+                                    id="name"
+                                    name="name"
+                                    placeholder="İsim"
+                                    class="form-control"
+                                />
+                                <label for="name">İsim</label>
+                            </div>
+                            <div class="form-floating mb-3">
+                                <input
+                                    type="text"
+                                    id="surname"
+                                    name="surname"
+                                    placeholder="Soyisim"
+                                    class="form-control"
+                                />
+                                <label for="surname">Soyisim</label>
+                            </div>
+                            <div class="mb-3">
+                                <label for="face_photo" class="form-label">Yüz Fotoğrafı Yükleyin</label>
+                                <input
+                                    type="file"
+                                    id="face_photo"
+                                    name="face_photo"
+                                    class="form-control"
+                                    accept="image/*"
+                                />
+                            </div>
+                            <button type="submit" class="btn btn-warning">Seçmen hesabına geçiş yap</button>
+                        </div>
                     </form>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    function toggleVoterFields() {
+        const voterCheckbox = document.getElementById("is_voter");
+        const voterFields = document.getElementById("voter-fields");
+        voterFields.style.display = voterCheckbox.checked ? "block" : "none";
+    }
+</script>
 {% endblock %}
