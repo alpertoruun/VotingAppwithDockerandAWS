@@ -1,16 +1,185 @@
 {% extends "_base.html" %}
 
 {% block content %}
+<style>
+    :root {
+        --primary-color: #4f46e5;
+        --primary-hover: #4338ca;
+        --border-color: #e5e7eb;
+        --bg-color: #f9fafb;
+        --text-color: #1f2937;
+    }
+
+    body {
+        background-color: var(--bg-color);
+    }
+
+    .container {
+        max-width: 900px;
+        padding: 2rem 1rem;
+    }
+
+    .page-title {
+        color: var(--text-color);
+        font-size: 2rem;
+        font-weight: 600;
+        margin-bottom: 2rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .list-group {
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .list-group-item {
+        border: none;
+        border-bottom: 1px solid var(--border-color);
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        background: white;
+    }
+
+    .list-group-item:first-child {
+        border-top-left-radius: 1rem;
+        border-top-right-radius: 1rem;
+    }
+
+    .list-group-item:last-child {
+        border-bottom-left-radius: 1rem;
+        border-bottom-right-radius: 1rem;
+        border-bottom: none;
+    }
+
+    .list-group-item:hover {
+        background-color: #f8fafc;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        text-decoration: none;
+    }
+
+    .list-group-item h5 {
+        color: var(--primary-color);
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        transition: color 0.2s ease;
+    }
+
+    .list-group-item:hover h5 {
+        color: var(--primary-hover);
+    }
+
+    .list-group-item p {
+        color: #4b5563;
+        font-size: 1rem;
+        line-height: 1.5;
+        margin-bottom: 1rem;
+    }
+
+    .list-group-item small {
+        display: block;
+        color: #6b7280;
+        font-size: 0.875rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .list-group-item small::before {
+        content: '🕒';
+        font-size: 1rem;
+    }
+
+    .election-card {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .election-card::after {
+        content: '→';
+        position: absolute;
+        right: 1.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 1.5rem;
+        color: #9ca3af;
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+
+    .list-group-item:hover .election-card::after {
+        opacity: 1;
+        right: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .container {
+            padding: 1rem;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .list-group-item {
+            padding: 1rem;
+        }
+
+        .list-group-item h5 {
+            font-size: 1.1rem;
+        }
+
+        .list-group-item small {
+            font-size: 0.8rem;
+        }
+    }
+
+    /* Empty state styling */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #6b7280;
+    }
+
+    .empty-state p {
+        margin-bottom: 0;
+        font-size: 1.1rem;
+    }
+</style>
+
 <div class="container mt-4">
-  <h1 class="mb-4">Eklendiğim Oylamalar</h1>
-  <div class="list-group">
-    {% for election in elections %}
-    <a href="{{ url_for('core.election_details', election_id=election.id) }}" class="list-group-item list-group-item-action">
-      <h5 class="mb-1">{{ election.title }}</h5>
-      <p class="mb-1">{{ election.description }}</p>
-      <small>Başlangıç: {{ election.start_date.strftime('%d-%m-%Y %H:%M') }} - Bitiş: {{ election.end_date.strftime('%d-%m-%Y %H:%M') }}</small>
-    </a>
-    {% endfor %}
-  </div>
+    <h1 class="page-title">Eklendiğim Oylamalar</h1>
+    <div class="list-group">
+        {% if elections %}
+            {% for election in elections %}
+                <a href="{{ url_for('core.joined_elections', elections=elections) }}" class="list-group-item list-group-item-action">
+                    <div class="election-card">
+                        <h5 class="mb-1">{{ election.title }}</h5>
+                        <p class="mb-1">{{ election.description }}</p>
+                        <small>Başlangıç: {{ election.start_date.strftime('%d-%m-%Y %H:%M') }} - Bitiş: {{ election.end_date.strftime('%d-%m-%Y %H:%M') }}</small>
+                    </div>
+                </a>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <p>Henüz hiçbir oylamaya eklenmemişsiniz.</p>
+            </div>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}

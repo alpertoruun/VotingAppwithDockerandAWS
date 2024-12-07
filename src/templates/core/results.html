@@ -1,54 +1,243 @@
 {% extends "_base.html" %}
 
 {% block content %}
+<style>
+    :root {
+        --primary-color: #4f46e5;
+        --primary-hover: #4338ca;
+        --border-color: #e5e7eb;
+        --bg-color: #f9fafb;
+        --text-color: #1f2937;
+    }
+
+    body {
+        background-color: var(--bg-color);
+    }
+
+    .container {
+        max-width: 1200px;
+        padding: 2rem 1rem;
+    }
+
+    .results-header {
+        background: white;
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+        animation: slideDown 0.5s ease-out;
+    }
+
+    .page-title {
+        color: var(--text-color);
+        font-size: 2rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .chart-controls {
+        background: white;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        margin-bottom: 2rem;
+    }
+
+    .btn-group {
+        border-radius: 0.5rem;
+        overflow: hidden;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .chart-type-btn {
+        padding: 0.75rem 1.5rem;
+        border: 1px solid var(--border-color);
+        background: white;
+        color: var(--text-color);
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .chart-type-btn:hover {
+        background-color: #f3f4f6;
+    }
+
+    .chart-type-btn.active {
+        background-color: var(--primary-color);
+        color: white;
+        border-color: var(--primary-color);
+    }
+
+    .chart-container {
+        background: white;
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+
+    .stats-container {
+        background: white;
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .participation-rate {
+        font-size: 1.25rem;
+        color: var(--text-color);
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--border-color);
+    }
+
+    .results-list {
+        list-style: none;
+        padding: 0;
+    }
+
+    .results-list li {
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-color);
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .results-list li:last-child {
+        border-bottom: none;
+    }
+
+    .results-table {
+        margin-top: 3rem;
+        background: white;
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table thead th {
+        background-color: var(--primary-color);
+        color: white;
+        font-weight: 500;
+        border: none;
+        padding: 1rem;
+    }
+
+    .table td {
+        padding: 1rem;
+        vertical-align: middle;
+        border-color: var(--border-color);
+    }
+
+    .table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @media (max-width: 768px) {
+        .container {
+            padding: 1rem;
+        }
+
+        .results-header {
+            padding: 1.5rem;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+        }
+
+        .chart-controls {
+            padding: 0.75rem;
+        }
+
+        .chart-type-btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+        }
+
+        .chart-container,
+        .stats-container {
+            padding: 1rem;
+        }
+    }
+</style>
+
 <div class="container mt-4">
-    <h1 class="text-center">{{ election.title }} Sonuçları</h1>
+    <div class="results-header">
+        <h1 class="page-title text-center">{{ election.title }} Sonuçları</h1>
+    </div>
+
     <div class="row mb-4">
         <div class="col-md-12 text-right">
-            <div class="btn-group" role="group" aria-label="Grafik Türü Seç">
-                <button type="button" class="btn btn-outline-secondary chart-type-btn active" data-chart-type="pie">Pasta</button>
-                <button type="button" class="btn btn-outline-secondary chart-type-btn" data-chart-type="bar">Bar</button>
-                <button type="button" class="btn btn-outline-secondary chart-type-btn" data-chart-type="line">Çizgi</button>
+            <div class="chart-controls">
+                <div class="btn-group" role="group" aria-label="Grafik Türü Seç">
+                    <button type="button" class="btn chart-type-btn active" data-chart-type="pie">Pasta</button>
+                    <button type="button" class="btn chart-type-btn" data-chart-type="bar">Bar</button>
+                    <button type="button" class="btn chart-type-btn" data-chart-type="line">Çizgi</button>
+                </div>
             </div>
         </div>
     </div>
+
     <div class="row">
         <div class="col-md-8">
-            <canvas id="voteChart"></canvas>
+            <div class="chart-container">
+                <canvas id="voteChart"></canvas>
+            </div>
         </div>
         <div class="col-md-4">
-            <h3>Katılım oranı: {{ participation_rate|round(2) }}%</h3>
-            <ul>
-                {% for description, count in results.items() %}
-                <li>{{ description }}: {{ count }} oy</li>
-                {% endfor %}
-            </ul>
+            <div class="stats-container">
+                <h3 class="participation-rate">Katılım oranı: {{ participation_rate|round(2) }}%</h3>
+                <ul class="results-list">
+                    {% for description, count in results.items() %}
+                    <li>
+                        <span>{{ description }}</span>
+                        <strong>{{ count }} oy</strong>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
         </div>
     </div>
-    <div class="row mt-5">
-        <div class="col-md-12">
-            <h2 class="text-center">Oylama Tablosu</h2>
-            <table class="table table-bordered table-hover">
-                <thead class="thead-dark">
-                    <tr>
-                        <th>Seçenek</th>
-                        <th>Oy Sayısı</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for description, count in results.items() %}
-                    <tr>
-                        <td>{{ description }}</td>
-                        <td>{{ count }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+
+    <div class="results-table">
+        <h2 class="text-center py-4">Oylama Tablosu</h2>
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Seçenek</th>
+                    <th>Oy Sayısı</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for description, count in results.items() %}
+                <tr>
+                    <td>{{ description }}</td>
+                    <td>{{ count }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 
-<!-- Bootstrap ve Chart.js -->
+<!-- CDN Bağlantıları -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
@@ -78,12 +267,12 @@ const data = {{ results.values()|list|tojson }};
 const backgroundColors = generateColors(labels.length);
 
 // Grafik Oluşturma Fonksiyonu
-let voteChart; // Grafik nesnesini global olarak tanımlıyoruz
+let voteChart;
 const ctx = document.getElementById('voteChart').getContext('2d');
 
 function createChart(type) {
     if (voteChart) {
-        voteChart.destroy(); // Mevcut grafik varsa yok et
+        voteChart.destroy();
     }
 
     voteChart = new Chart(ctx, {
@@ -91,7 +280,7 @@ function createChart(type) {
         data: {
             labels: labels,
             datasets: [{
-                label: type === 'pie' ? 'Oylama Sonuçları' : '', // Pasta grafikte etiket, diğerlerinde boş
+                label: type === 'pie' ? 'Oylama Sonuçları' : '',
                 data: data,
                 backgroundColor: backgroundColors,
                 borderColor: backgroundColors.map(color => color.replace('0.5', '1')),
@@ -102,15 +291,15 @@ function createChart(type) {
             responsive: true,
             plugins: {
                 legend: {
-                    display: type === 'pie', // Sadece pasta grafikte göster
+                    display: type === 'pie',
                     position: 'bottom',
                 },
                 title: {
-                    display: type === 'pie', // Sadece pasta grafikte göster
+                    display: type === 'pie',
                     text: 'Oylama Sonuçları'
                 }
             },
-            scales: type !== 'pie' ? { // Pasta grafikte ölçek olmaz
+            scales: type !== 'pie' ? {
                 x: { beginAtZero: true },
                 y: { beginAtZero: true }
             } : {}
@@ -125,7 +314,7 @@ createChart('pie');
 document.querySelectorAll('.chart-type-btn').forEach(button => {
     button.addEventListener('click', function () {
         const chartType = this.getAttribute('data-chart-type');
-        createChart(chartType); // Seçilen grafik türüyle grafiği yeniden oluştur
+        createChart(chartType);
 
         // Aktif buton stili
         document.querySelectorAll('.chart-type-btn').forEach(btn => btn.classList.remove('active'));

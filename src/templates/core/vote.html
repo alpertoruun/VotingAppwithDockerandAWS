@@ -1,25 +1,188 @@
 {% extends "_base.html" %}
 
 {% block content %}
+<style>
+    :root {
+        --primary-color: #4f46e5;
+        --primary-hover: #4338ca;
+        --success-color: #10b981;
+        --success-hover: #059669;
+        --border-color: #e5e7eb;
+        --bg-color: #f9fafb;
+        --text-color: #1f2937;
+    }
+
+    body {
+        background-color: var(--bg-color);
+    }
+
+    .container {
+        max-width: 800px;
+        padding: 2rem 1rem;
+    }
+
+    .vote-card {
+        background: white;
+        border: none;
+        border-radius: 1rem;
+        overflow: hidden;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        animation: slideUp 0.5s ease-out;
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .card-header {
+        background: var(--primary-color);
+        padding: 1.5rem 2rem;
+        border: none;
+    }
+
+    .card-title {
+        color: white;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0;
+        line-height: 1.4;
+    }
+
+    .card-body {
+        padding: 2rem;
+        background: linear-gradient(to bottom, #ffffff, #f8fafc);
+    }
+
+    .card-text {
+        color: var(--text-color);
+        font-size: 1.1rem;
+        line-height: 1.6;
+        margin-bottom: 2rem;
+    }
+
+    .form-label {
+        color: var(--text-color);
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        display: block;
+    }
+
+    .form-select-lg {
+        width: 100%;
+        padding: 1rem;
+        font-size: 1.1rem;
+        border: 2px solid var(--border-color);
+        border-radius: 0.75rem;
+        background-color: white;
+        transition: all 0.2s ease;
+        cursor: pointer;
+    }
+
+    .form-select-lg:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        outline: none;
+    }
+
+    .form-select-lg option {
+        padding: 1rem;
+        font-size: 1rem;
+    }
+
+    .btn-vote {
+        background-color: var(--success-color);
+        color: white;
+        border: none;
+        padding: 1rem 2.5rem;
+        font-size: 1.1rem;
+        font-weight: 500;
+        border-radius: 0.75rem;
+        transition: all 0.2s ease;
+        margin-top: 1rem;
+    }
+
+    .btn-vote:hover {
+        background-color: var(--success-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    }
+
+    .btn-vote:active {
+        transform: translateY(0);
+    }
+
+    .btn-vote::before {
+        content: '✓';
+        margin-right: 0.5rem;
+    }
+
+    /* Form validation styles */
+    .form-select-lg.is-invalid {
+        border-color: #dc2626;
+        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%23dc2626' viewBox='0 0 12 12'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23dc2626' stroke='none'/%3e%3c/svg%3e");
+        background-repeat: no-repeat;
+        background-position: right 1rem center;
+        background-size: 1.5rem;
+    }
+
+    @media (max-width: 768px) {
+        .container {
+            padding: 1rem;
+        }
+
+        .card-header {
+            padding: 1.25rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .form-select-lg {
+            padding: 0.75rem;
+            font-size: 1rem;
+        }
+
+        .btn-vote {
+            padding: 0.75rem 2rem;
+            font-size: 1rem;
+            width: 100%;
+        }
+    }
+</style>
+
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <div class="card shadow-lg"> <!-- Gölge efekti eklendi -->
-                <div class="card-header bg-primary text-white"> <!-- Başlık için arka plan ve metin rengi eklendi -->
+            <div class="vote-card">
+                <div class="card-header">
                     <h2 class="card-title">{{ election.title }}</h2>
                 </div>
                 <div class="card-body">
                     <p class="card-text">{{ election.description }}</p>
                     <form method="post">
                         <div class="mb-4">
-                            <label for="option" class="form-label"><strong>Seçenekler:</strong></label> <!-- Label'ı kalın yaparak vurgulandı -->
-                            <select class="form-control form-select-lg mb-3" id="option" name="option"> <!-- Form büyüklüğü artırıldı -->
+                            <label for="option" class="form-label">Seçenekler:</label>
+                            <select class="form-control form-select-lg mb-3" id="option" name="option" required>
+                                <option value="" disabled selected>Lütfen bir seçenek seçin</option>
                                 {% for option in options %}
                                 <option value="{{ option.id }}">{{ option.description }}</option>
                                 {% endfor %}
                             </select>
                         </div>
-                        <button type="submit" class="btn btn-success btn-lg">Oy Ver</button> <!-- Buton boyutu ve rengi güçlendirildi -->
+                        <button type="submit" class="btn btn-vote">Oy Ver</button>
                     </form>
                 </div>
             </div>

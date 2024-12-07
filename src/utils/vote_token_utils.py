@@ -10,7 +10,7 @@ def create_vote_token_entry(voter_id, election_id):
     """Create a voting token entry in the database."""
     token = generate_vote_token()
     vote_token_entry = VoteToken(
-        voter_id=voter_id,
+        user_id=voter_id,
         election_id=election_id,
         token=token,
         used=False

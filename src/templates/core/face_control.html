@@ -206,7 +206,7 @@ const RIGHT_EYE_INDICES = [
         console.log("Landmark verileri mevcut.");
         // Önce yüz doğrulama yapılmalı
         if (!state.faceVerified) {
-            captureAndVerify();
+            captureImage();
             return;  // Yüz doğrulanmadan göz kırpma kontrolü yapma
         }
 
@@ -249,49 +249,7 @@ const RIGHT_EYE_INDICES = [
       console.error("Landmark verileri alınamadı!")
     }
 }
-function captureAndVerify() {
-    if (state.captureCount >= CONFIG.maxCaptures) return;
 
-    const context = elements.canvas.getContext('2d');
-    elements.canvas.width = elements.video.videoWidth;
-    elements.canvas.height = elements.video.videoHeight;
-    context.drawImage(elements.video, 0, 0);
-
-    elements.canvas.toBlob(blob => {
-        const file = new File([blob], `capture_${state.captureCount}.jpg`, { type: "image/jpeg" });
-        const dataTransfer = new DataTransfer();
-        dataTransfer.items.add(file);
-        elements.imageInput.files = dataTransfer.files;
-
-        const formData = new FormData(elements.form);
-
-        fetch(elements.form.action, {
-            method: "POST",
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            console.log("Face verification response:", data);
-            if (data.success === "true") {
-                state.matches++;
-                state.redirectUrl = data.redirect_url;
-                updateProgress();
-
-                if (state.matches >= CONFIG.requiredMatches && !state.faceVerified) {
-                    console.log("Face verification successful!");
-                    state.faceVerified = true;
-                    startBlinkDetection();
-                }
-            }
-        })
-        .catch(error => {
-            console.error("Yüz doğrulama hatası:", error);
-            updateStatus('Görüntü işleme hatası!', 'warning');
-        });
-
-        state.captureCount++;
-    }, 'image/jpeg');
-}
   function calculateEAR(landmarks, indices) {
     const points = indices.map(index => ({
       x: landmarks[index].x,

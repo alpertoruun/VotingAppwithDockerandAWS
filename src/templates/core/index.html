@@ -1,71 +1,249 @@
 {% extends "_base.html" %}
 
 {% block content %}
+<style>
+    :root {
+        --primary-color: #4f46e5;
+        --primary-hover: #4338ca;
+        --success-color: #10b981;
+        --border-color: #e5e7eb;
+        --bg-color: #f9fafb;
+        --text-color: #1f2937;
+    }
+
+    body {
+        background-color: var(--bg-color);
+    }
+
+    .container {
+        max-width: 1000px;
+        padding: 2rem 1rem;
+    }
+
+    .card {
+        border: none;
+        border-radius: 1rem;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+        background: white;
+        animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .card-body {
+        padding: 2rem;
+    }
+
+    .card-footer {
+        background: none;
+        border-top: 1px solid var(--border-color);
+        padding: 1.5rem 2rem;
+    }
+
+    h2 {
+        color: var(--text-color);
+        font-weight: 600;
+        margin-bottom: 2rem;
+    }
+
+    h3 {
+        color: var(--text-color);
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin: 2rem 0 1rem;
+    }
+
+    .form-label {
+        color: var(--text-color);
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    .form-control {
+        border: 2px solid var(--border-color);
+        border-radius: 0.5rem;
+        padding: 0.75rem;
+        transition: all 0.2s ease;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+    }
+
+    .input-group {
+        margin-bottom: 1rem;
+    }
+
+    .input-group > .form-control {
+        border-radius: 0.5rem;
+    }
+
+    .input-group > .btn {
+        border-radius: 0.5rem;
+        margin-left: 0.5rem;
+    }
+
+    .voter-row {
+        background: #f8fafc;
+        padding: 1rem;
+        border-radius: 0.75rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s ease;
+    }
+
+    .voter-row:hover {
+        background: #f1f5f9;
+        transform: translateY(-2px);
+    }
+
+    .btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background-color: var(--primary-hover);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+    }
+
+    .btn-outline-secondary {
+        color: #4b5563;
+        border-color: var(--border-color);
+    }
+
+    .btn-outline-secondary:hover {
+        background-color: #f3f4f6;
+        color: #1f2937;
+    }
+
+    .btn-outline-primary {
+        color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .btn-outline-primary:hover {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+        color: white;
+    }
+
+    #optionsContainer .input-group {
+        margin-bottom: 1rem;
+        background: #f8fafc;
+        padding: 0.75rem;
+        border-radius: 0.75rem;
+        transition: all 0.2s ease;
+    }
+
+    #optionsContainer .input-group:hover {
+        background: #f1f5f9;
+    }
+
+    .addOption, .addVoter {
+        margin-top: 1rem;
+    }
+
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .voter-row {
+            flex-direction: column;
+        }
+
+        .voter-row > * {
+            margin-bottom: 0.5rem;
+            width: 100%;
+        }
+
+        .voter-row > *:last-child {
+            margin-bottom: 0;
+        }
+
+        .input-group > .btn {
+            margin-left: 0;
+            margin-top: 0.5rem;
+        }
+    }
+</style>
+
 <div class="container mt-4">
-  <div class="row">
-    <div class="col">
-      <div class="card shadow">
-        <div class="card-body">
-          <h2 class="text-center mb-4">Oylama Bilgileri</h2>
-          <form id="createElectionForm" action="{{ url_for('core.create_election') }}" method="post" enctype="multipart/form-data">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="row">
+        <div class="col">
+            <div class="card shadow">
+                <div class="card-body">
+                    <h2 class="text-center mb-4">Oylama Bilgileri</h2>
+                    <form id="createElectionForm" action="{{ url_for('core.create_election') }}" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-            <!-- Başlık -->
-            <div class="mb-3">
-              <label for="title" class="form-label">Oylama Başlığı</label>
-              <input type="text" class="form-control" id="title" name="title" required>
-            </div>
+                        <!-- Başlık -->
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Oylama Başlığı</label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
 
-            <!-- Açıklama -->
-            <div class="mb-3">
-              <label for="description" class="form-label">Açıklama</label>
-              <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
-            </div>
+                        <!-- Açıklama -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Açıklama</label>
+                            <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+                        </div>
 
-            <!-- Başlangıç ve Bitiş Tarihleri -->
-            <div class="mb-3 row">
-              <div class="col">
-                <label for="startDate" class="form-label">Başlangıç Tarihi</label>
-                <input type="datetime-local" class="form-control" id="startDate" name="startDate" required>
-              </div>
-              <div class="col">
-                <label for="endDate" class="form-label">Bitiş Tarihi</label>
-                <input type="datetime-local" class="form-control" id="endDate" name="endDate" required>
-              </div>
-            </div>
+                        <!-- Başlangıç ve Bitiş Tarihleri -->
+                        <div class="mb-3 row">
+                            <div class="col">
+                                <label for="startDate" class="form-label">Başlangıç Tarihi</label>
+                                <input type="datetime-local" class="form-control" id="startDate" name="startDate" required>
+                            </div>
+                            <div class="col">
+                                <label for="endDate" class="form-label">Bitiş Tarihi</label>
+                                <input type="datetime-local" class="form-control" id="endDate" name="endDate" required>
+                            </div>
+                        </div>
 
-            <!-- Seçenekler -->
-            <div class="mb-3">
-              <label class="form-label">Seçenekler</label>
-              <div id="optionsContainer">
-                <!-- Seçenekler buraya dinamik olarak eklenecek -->
-              </div>
-              <button class="btn btn-outline-secondary addOption" type="button">+</button>
-            </div>
+                        <!-- Seçenekler -->
+                        <div class="mb-3">
+                            <label class="form-label">Seçenekler</label>
+                            <div id="optionsContainer">
+                                <!-- Seçenekler buraya dinamik olarak eklenecek -->
+                            </div>
+                            <button class="btn btn-outline-secondary addOption" type="button">+</button>
+                        </div>
 
-            <!-- Seçmen Bilgileri -->
-            <h3 class="text-left">Seçmen Bilgileri</h3>
-            <div class="container" id="votersContainer">
-              <div class="input-group mb-3 voter-row">
-                <input type="text" class="form-control voter-tc" name="voterTc[]" placeholder="TC Kimlik No" required>
-                <button type="button" class="btn btn-outline-primary fetchUserInfo">Kullanıcıyı Getir</button>
-                <input type="text" class="form-control" name="voterName[]" placeholder="Ad" readonly>
-                <input type="text" class="form-control" name="voterSurname[]" placeholder="Soyad" readonly>
-                <input type="email" class="form-control" name="voterEmail[]" placeholder="E-posta" readonly>
-                <button class="btn btn-outline-secondary removeVoter" type="button">−</button>
-              </div>
+                        <!-- Seçmen Bilgileri -->
+                        <h3 class="text-left">Seçmen Bilgileri</h3>
+                        <div class="container" id="votersContainer">
+                            <!-- Seçmenler buraya dinamik olarak eklenecek -->
+                        </div>
+                        <button class="btn btn-outline-secondary addVoter" type="button">+</button>
+                    </form>
+                </div>
+
+                <!-- Oylama Oluştur Butonu -->
+                <div class="card-footer text-right">
+                    <button type="submit" form="createElectionForm" class="btn btn-primary">Oylama Oluştur</button>
+                </div>
             </div>
-            <button class="btn btn-outline-secondary addVoter" type="button">+</button>
-          </form>
         </div>
-
-        <!-- Oylama Oluştur Butonu -->
-        <div class="card-footer text-right">
-          <button type="submit" form="createElectionForm" class="btn btn-primary">Oylama Oluştur</button>
-        </div>
-      </div>
     </div>
-  </div>
 </div>
 
 <script>
@@ -183,5 +361,4 @@
     });
   });
 </script>
-
 {% endblock %}

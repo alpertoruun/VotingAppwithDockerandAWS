@@ -468,7 +468,7 @@ def vote(encrypted_token):
 
         # Vote kaydını oluştur ve veritabanına ekle
         vote = Votes(
-            voter_id=voter.id,
+            user_id=voter.id,
             election_id=election.id,
             option_id=selected_option_id
         )

@@ -1,9 +1,181 @@
 {% extends "_base.html" %}
 
 {% block content %}
+<style>
+    :root {
+        --primary-color: #4f46e5;
+        --primary-hover: #4338ca;
+        --border-color: #e5e7eb;
+        --bg-color: #f9fafb;
+        --text-color: #1f2937;
+    }
+
+    body {
+        background-color: var(--bg-color);
+    }
+
+    .container {
+        max-width: 1200px;
+        padding: 2rem 1rem;
+    }
+
+    .page-header {
+        background: white;
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+        animation: slideDown 0.5s ease-out;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .page-title {
+        color: var(--text-color);
+        font-size: 2rem;
+        font-weight: 600;
+        margin: 0;
+        margin-bottom: 1.5rem;
+    }
+
+    .search-container {
+        position: relative;
+        max-width: 600px;
+    }
+
+    .search-container::before {
+        content: '🔍';
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6b7280;
+        font-size: 1.2rem;
+    }
+
+    #search-input {
+        width: 100%;
+        padding: 1rem 1rem 1rem 3rem;
+        border: 2px solid var(--border-color);
+        border-radius: 0.75rem;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+        background-color: white;
+    }
+
+    #search-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+    }
+
+    #search-input::placeholder {
+        color: #9ca3af;
+    }
+
+    #election-table {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        padding: 1rem;
+        animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    .loading {
+        position: relative;
+        opacity: 0.7;
+    }
+
+    .loading::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 2rem;
+        height: 2rem;
+        border: 3px solid #f3f4f6;
+        border-top-color: var(--primary-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to {
+            transform: translate(-50%, -50%) rotate(360deg);
+        }
+    }
+
+    /* Empty state styling */
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #6b7280;
+    }
+
+    .empty-state p {
+        margin-bottom: 0;
+        font-size: 1.1rem;
+    }
+
+    @media (max-width: 768px) {
+        .container {
+            padding: 1rem;
+        }
+
+        .page-header {
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .page-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        #search-input {
+            font-size: 0.9rem;
+            padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+        }
+
+        .search-container::before {
+            font-size: 1rem;
+            left: 0.8rem;
+        }
+    }
+</style>
+
 <div class="container mt-4">
-    <h1 class="mb-4">Oluşturduğum Oylamalarım</h1>
-    <input type="text" id="search-input" class="form-control" placeholder="Oylama ismine göre ara">
+    <div class="page-header">
+        <h1 class="page-title">Oluşturduğum Oylamalarım</h1>
+        <div class="search-container">
+            <input 
+                type="text" 
+                id="search-input" 
+                class="form-control" 
+                placeholder="Oylama ismine göre ara"
+                autocomplete="off"
+            >
+        </div>
+    </div>
     
     <div id="election-table">
         {% include 'core/election_table.html' %}
@@ -11,18 +183,30 @@
 </div>
 
 <script>
+    let searchTimeout;
+    const electionTable = document.getElementById('election-table');
+
     document.getElementById('search-input').addEventListener('keyup', function() {
-        const searchQuery = this.value;
-        fetch(`/my_elections?search=${encodeURIComponent(searchQuery)}`, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        })
-        .then(response => response.text())
-        .then(html => {
-            document.getElementById('election-table').innerHTML = html;
-        })
-        .catch(error => console.error('Hata:', error));
+        clearTimeout(searchTimeout);
+        electionTable.classList.add('loading');
+        
+        searchTimeout = setTimeout(() => {
+            const searchQuery = this.value;
+            
+            fetch(`/my_elections?search=${encodeURIComponent(searchQuery)}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                electionTable.innerHTML = html;
+            })
+            .catch(error => console.error('Hata:', error))
+            .finally(() => {
+                electionTable.classList.remove('loading');
+            });
+        }, 300);
     });
 </script>
 {% endblock %}

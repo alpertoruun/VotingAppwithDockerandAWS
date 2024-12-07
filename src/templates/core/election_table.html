@@ -80,27 +80,150 @@
 </nav>
 
 <style>
-    th {
+    :root {
+        --primary-color: #4f46e5;
+        --success-color: #10b981;
+        --hover-bg: #f8fafc;
+        --border-color: #e5e7eb;
+    }
+
+    .table-responsive {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        padding: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .table {
+        margin-bottom: 0;
+        border: none;
+    }
+
+    .table th {
+        background-color: #f8fafc;
+        color: #1f2937;
+        font-weight: 600;
+        padding: 1rem;
         position: relative;
+        border-bottom: 2px solid var(--border-color);
+        white-space: nowrap;
+    }
+
+    .table td {
+        padding: 1rem;
+        vertical-align: middle;
+        color: #374151;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .table tbody tr {
+        transition: all 0.2s ease;
+    }
+
+    .table tbody tr:hover {
+        background-color: var(--hover-bg);
+        transform: translateY(-1px);
     }
 
     .sort-icons {
-        display: flex;
+        display: inline-flex;
         flex-direction: column;
         position: absolute;
         top: 50%;
-        right: 5px;
+        right: 8px;
         transform: translateY(-50%);
+        opacity: 0.5;
+        transition: opacity 0.2s ease;
+    }
+
+    .sort-icons:hover {
+        opacity: 1;
     }
 
     .sort-icons a {
-        font-size: 0.6em;
-        color: #007bff;
+        font-size: 0.7em;
+        color: #6b7280;
         text-decoration: none;
-        line-height: 0.8em;
+        line-height: 1;
+        padding: 1px;
+        transition: color 0.2s ease;
     }
 
     .sort-icons a:hover {
-        color: #0056b3;
+        color: var(--primary-color);
+    }
+
+    .btn {
+        border-radius: 0.5rem;
+        padding: 0.5rem 1rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+        background-color: var(--primary-color);
+        border: none;
+    }
+
+    .btn-primary:hover {
+        background-color: #4338ca;
+        transform: translateY(-1px);
+    }
+
+    .btn-success {
+        background-color: var(--success-color);
+        border: none;
+    }
+
+    .btn-success:hover {
+        background-color: #059669;
+        transform: translateY(-1px);
+    }
+
+    /* Pagination Styles */
+    .pagination {
+        margin-top: 2rem;
+    }
+
+    .page-link {
+        border: none;
+        color: #4b5563;
+        padding: 0.75rem 1rem;
+        margin: 0 0.25rem;
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+    }
+
+    .page-link:hover {
+        background-color: var(--primary-color);
+        color: white;
+        transform: translateY(-1px);
+    }
+
+    .page-item.active .page-link {
+        background-color: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .page-item.disabled .page-link {
+        background-color: #f3f4f6;
+        color: #9ca3af;
+    }
+
+    @media (max-width: 768px) {
+        .table-responsive {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+        }
+
+        .table td, .table th {
+            padding: 0.75rem;
+        }
+
+        .btn {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.875rem;
+        }
     }
 </style>
