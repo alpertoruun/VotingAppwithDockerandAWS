@@ -511,7 +511,7 @@ def create_election():
         description = request.form.get('description')
         start_date = request.form.get('startDate')
         end_date = request.form.get('endDate')
-        options = request.form.getlist('options')
+        options = request.form.getlist('options[]')
         voter_tcs = request.form.getlist('voterTc[]')
 
         # Hata kontrolü
@@ -546,7 +546,7 @@ def create_election():
         for option_desc in options:
             option = Option(description=option_desc, election_id=election.id)
             db.session.add(option)
-
+        db.session.commit()
         # Seçmenleri ekle
         for user in valid_users:
             vote_token = create_vote_token_entry(user.id, election.id)
@@ -577,7 +577,39 @@ def get_user_info():
 @core_bp.route('/joined_elections', methods=['GET'])
 @login_required
 def joined_elections():
-    elections = Election.query.join(VoteToken, VoteToken.election_id == Election.id) \
-        .filter(VoteToken.user_id == current_user.id).all()
+    page = request.args.get('page', 1, type=int)
+    sort_by = request.args.get('sort_by', 'created_at')
+    order = request.args.get('order', 'desc')
+    search = request.args.get('search', '')
 
-    return render_template('core/joined_elections.html', elections=elections)
+    # Base query
+    query = Election.query.join(VoteToken, VoteToken.election_id == Election.id)\
+        .filter(VoteToken.user_id == current_user.id)
+    
+    # Search functionality
+    if search:
+        query = query.filter(Election.title.ilike(f'%{search}%'))
+    
+    # Sorting
+    sort_column = getattr(Election, sort_by, Election.created_at)
+    if order == 'desc':
+        sort_column = sort_column.desc()
+    query = query.order_by(sort_column)
+    
+    # Pagination
+    pagination = query.paginate(page=page, per_page=10, error_out=False)
+    elections = pagination.items
+
+    # For AJAX requests (search functionality)
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return render_template('core/joined_election_table.html',
+                             elections=[(election.get_encrypted_id(), election) for election in elections],
+                             pagination=pagination,
+                             sort_by=sort_by,
+                             order=order)
+
+    return render_template('core/joined_elections.html',
+                         elections=[(election.get_encrypted_id(), election) for election in elections],
+                         pagination=pagination,
+                         sort_by=sort_by,
+                         order=order)

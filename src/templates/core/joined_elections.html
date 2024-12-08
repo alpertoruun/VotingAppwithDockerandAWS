@@ -15,29 +15,23 @@
     }
 
     .container {
-        max-width: 900px;
+        max-width: 1200px;
         padding: 2rem 1rem;
     }
 
-    .page-title {
-        color: var(--text-color);
-        font-size: 2rem;
-        font-weight: 600;
-        margin-bottom: 2rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid var(--border-color);
-    }
-
-    .list-group {
+    .page-header {
+        background: white;
+        padding: 2rem;
         border-radius: 1rem;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        animation: fadeIn 0.5s ease-out;
+        margin-bottom: 2rem;
+        animation: slideDown 0.5s ease-out;
     }
 
-    @keyframes fadeIn {
+    @keyframes slideDown {
         from {
             opacity: 0;
-            transform: translateY(20px);
+            transform: translateY(-20px);
         }
         to {
             opacity: 1;
@@ -45,141 +39,150 @@
         }
     }
 
-    .list-group-item {
-        border: none;
-        border-bottom: 1px solid var(--border-color);
-        padding: 1.5rem;
-        transition: all 0.3s ease;
-        background: white;
-    }
-
-    .list-group-item:first-child {
-        border-top-left-radius: 1rem;
-        border-top-right-radius: 1rem;
-    }
-
-    .list-group-item:last-child {
-        border-bottom-left-radius: 1rem;
-        border-bottom-right-radius: 1rem;
-        border-bottom: none;
-    }
-
-    .list-group-item:hover {
-        background-color: #f8fafc;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        text-decoration: none;
-    }
-
-    .list-group-item h5 {
-        color: var(--primary-color);
-        font-size: 1.25rem;
+    .page-title {
+        color: var(--text-color);
+        font-size: 2rem;
         font-weight: 600;
-        margin-bottom: 0.75rem;
-        transition: color 0.2s ease;
+        margin: 0;
+        margin-bottom: 1.5rem;
     }
 
-    .list-group-item:hover h5 {
-        color: var(--primary-hover);
-    }
-
-    .list-group-item p {
-        color: #4b5563;
-        font-size: 1rem;
-        line-height: 1.5;
-        margin-bottom: 1rem;
-    }
-
-    .list-group-item small {
-        display: block;
-        color: #6b7280;
-        font-size: 0.875rem;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-    }
-
-    .list-group-item small::before {
-        content: '🕒';
-        font-size: 1rem;
-    }
-
-    .election-card {
+    .search-container {
         position: relative;
-        overflow: hidden;
+        max-width: 600px;
     }
 
-    .election-card::after {
-        content: '→';
+    .search-container::before {
+        content: '🔍';
         position: absolute;
-        right: 1.5rem;
+        left: 1rem;
         top: 50%;
         transform: translateY(-50%);
-        font-size: 1.5rem;
-        color: #9ca3af;
-        opacity: 0;
-        transition: all 0.3s ease;
+        color: #6b7280;
+        font-size: 1.2rem;
     }
 
-    .list-group-item:hover .election-card::after {
-        opacity: 1;
-        right: 1rem;
+    #search-input {
+        width: 100%;
+        padding: 1rem 1rem 1rem 3rem;
+        border: 2px solid var(--border-color);
+        border-radius: 0.75rem;
+        font-size: 1rem;
+        transition: all 0.2s ease;
+        background-color: white;
+    }
+
+    #search-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+    }
+
+    #search-input::placeholder {
+        color: #9ca3af;
+    }
+
+    #election-table {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        padding: 1rem;
+        animation: fadeIn 0.5s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    .loading {
+        position: relative;
+        opacity: 0.7;
+    }
+
+    .loading::after {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 2rem;
+        height: 2rem;
+        border: 3px solid #f3f4f6;
+        border-top-color: var(--primary-color);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: translate(-50%, -50%) rotate(360deg); }
     }
 
     @media (max-width: 768px) {
-        .container {
-            padding: 1rem;
+        .container { padding: 1rem; }
+        .page-header {
+            padding: 1.5rem;
+            margin-bottom: 1rem;
         }
-
         .page-title {
             font-size: 1.5rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
         }
-
-        .list-group-item {
-            padding: 1rem;
+        #search-input {
+            font-size: 0.9rem;
+            padding: 0.75rem 0.75rem 0.75rem 2.5rem;
         }
-
-        .list-group-item h5 {
-            font-size: 1.1rem;
+        .search-container::before {
+            font-size: 1rem;
+            left: 0.8rem;
         }
-
-        .list-group-item small {
-            font-size: 0.8rem;
-        }
-    }
-
-    /* Empty state styling */
-    .empty-state {
-        text-align: center;
-        padding: 3rem 1rem;
-        color: #6b7280;
-    }
-
-    .empty-state p {
-        margin-bottom: 0;
-        font-size: 1.1rem;
     }
 </style>
 
 <div class="container mt-4">
-    <h1 class="page-title">Eklendiğim Oylamalar</h1>
-    <div class="list-group">
-        {% if elections %}
-            {% for election in elections %}
-                <a href="{{ url_for('core.joined_elections', elections=elections) }}" class="list-group-item list-group-item-action">
-                    <div class="election-card">
-                        <h5 class="mb-1">{{ election.title }}</h5>
-                        <p class="mb-1">{{ election.description }}</p>
-                        <small>Başlangıç: {{ election.start_date.strftime('%d-%m-%Y %H:%M') }} - Bitiş: {{ election.end_date.strftime('%d-%m-%Y %H:%M') }}</small>
-                    </div>
-                </a>
-            {% endfor %}
-        {% else %}
-            <div class="empty-state">
-                <p>Henüz hiçbir oylamaya eklenmemişsiniz.</p>
-            </div>
-        {% endif %}
+    <div class="page-header">
+        <h1 class="page-title">Katıldığım Oylamalar</h1>
+        <div class="search-container">
+            <input 
+                type="text" 
+                id="search-input" 
+                class="form-control" 
+                placeholder="Oylama ismine göre ara"
+                autocomplete="off"
+            >
+        </div>
+    </div>
+    
+    <div id="election-table">
+        {% include 'core/joined_election_table.html' %}
     </div>
 </div>
+
+<script>
+    let searchTimeout;
+    const electionTable = document.getElementById('election-table');
+
+    document.getElementById('search-input').addEventListener('keyup', function() {
+        clearTimeout(searchTimeout);
+        electionTable.classList.add('loading');
+        
+        searchTimeout = setTimeout(() => {
+            const searchQuery = this.value;
+            
+            fetch(`/joined_elections?search=${encodeURIComponent(searchQuery)}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.text())
+            .then(html => {
+                electionTable.innerHTML = html;
+            })
+            .catch(error => console.error('Hata:', error))
+            .finally(() => {
+                electionTable.classList.remove('loading');
+            });
+        }, 300);
+    });
+</script>
 {% endblock %}

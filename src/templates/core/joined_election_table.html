@@ -1,0 +1,82 @@
+<div class="table-responsive">
+    <table class="table table-bordered table-hover">
+        <thead class="thead-dark">
+            <tr>
+                <th>Oylama İsmi
+                    <div class="sort-icons">
+                        <a href="{{ url_for('core.joined_elections', sort_by='title', order='asc', page=pagination.page) }}">▲</a>
+                        <a href="{{ url_for('core.joined_elections', sort_by='title', order='desc', page=pagination.page) }}">▼</a>
+                    </div>
+                </th>
+                <th>Açıklama
+                    <div class="sort-icons">
+                        <a href="{{ url_for('core.joined_elections', sort_by='description', order='asc', page=pagination.page) }}">▲</a>
+                        <a href="{{ url_for('core.joined_elections', sort_by='description', order='desc', page=pagination.page) }}">▼</a>
+                    </div>
+                </th>
+                <th>Oluşturulma Tarihi
+                    <div class="sort-icons">
+                        <a href="{{ url_for('core.joined_elections', sort_by='created_at', order='asc', page=pagination.page) }}">▲</a>
+                        <a href="{{ url_for('core.joined_elections', sort_by='created_at', order='desc', page=pagination.page) }}">▼</a>
+                    </div>
+                </th>
+                <th>Başlangıç Tarihi
+                    <div class="sort-icons">
+                        <a href="{{ url_for('core.joined_elections', sort_by='start_date', order='asc', page=pagination.page) }}">▲</a>
+                        <a href="{{ url_for('core.joined_elections', sort_by='start_date', order='desc', page=pagination.page) }}">▼</a>
+                    </div>
+                </th>
+                <th>Bitiş Tarihi
+                    <div class="sort-icons">
+                        <a href="{{ url_for('core.joined_elections', sort_by='end_date', order='asc', page=pagination.page) }}">▲</a>
+                        <a href="{{ url_for('core.joined_elections', sort_by='end_date', order='desc', page=pagination.page) }}">▼</a>
+                    </div>
+                </th>
+                <th>Oy Ver</th>
+                <th>Sonuçlar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for encrypted_id, election in elections %}
+            <tr>
+                <td>{{ election.title }}</td>
+                <td>{{ election.description }}</td>
+                <td>{{ election.created_at.strftime('%d-%m-%Y %H:%M') }}</td>
+                <td>{{ election.start_date.strftime('%d-%m-%Y %H:%M') }}</td>
+                <td>{{ election.end_date.strftime('%d-%m-%Y %H:%M') }}</td>
+                <td>
+                    <a class="btn btn-primary btn-sm" href="{{ url_for('core.vote', encrypted_election_id=encrypted_id) }}">Oy Ver</a>
+                </td>
+                <td>
+                    <a class="btn btn-success btn-sm" href="{{ url_for('core.election_results', encrypted_election_id=encrypted_id) }}">Sonuçları Gör</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Sayfalama -->
+<nav aria-label="Sayfalama">
+    <ul class="pagination justify-content-center">
+        {% if pagination.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('core.joined_elections', page=pagination.prev_num, sort_by=sort_by, order=order) }}">Önceki</a>
+        </li>
+        {% endif %}
+        
+        {% for page in pagination.iter_pages() %}
+            {% if page %}
+            <li class="page-item {{ 'active' if page == pagination.page else '' }}">
+                <a class="page-link" href="{{ url_for('core.joined_elections', page=page, sort_by=sort_by, order=order) }}">{{ page }}</a>
+            </li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if pagination.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('core.joined_elections', page=pagination.next_num, sort_by=sort_by, order=order) }}">Sonraki</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
