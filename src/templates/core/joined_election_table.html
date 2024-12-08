@@ -32,7 +32,6 @@
                         <a href="{{ url_for('core.joined_elections', sort_by='end_date', order='desc', page=pagination.page) }}">▼</a>
                     </div>
                 </th>
-                <th>Oy Ver</th>
                 <th>Sonuçlar</th>
             </tr>
         </thead>
@@ -44,9 +43,6 @@
                 <td>{{ election.created_at.strftime('%d-%m-%Y %H:%M') }}</td>
                 <td>{{ election.start_date.strftime('%d-%m-%Y %H:%M') }}</td>
                 <td>{{ election.end_date.strftime('%d-%m-%Y %H:%M') }}</td>
-                <td>
-                    <a class="btn btn-primary btn-sm" href="{{ url_for('core.vote', encrypted_election_id=encrypted_id) }}">Oy Ver</a>
-                </td>
                 <td>
                     <a class="btn btn-success btn-sm" href="{{ url_for('core.election_results', encrypted_election_id=encrypted_id) }}">Sonuçları Gör</a>
                 </td>
