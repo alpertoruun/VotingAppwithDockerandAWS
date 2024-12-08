@@ -2,392 +2,407 @@
 
 {% block content %}
 <div class="container mt-4">
-  <div class="row">
-    <div class="col">
-      <div class="card shadow">
-        <div class="card-body text-center">
-          <h2 class="mb-4">Yüz Doğrulama</h2>
-          
-          <!-- Durum Göstergesi Eklendi -->
-          <div id="statusIndicator" class="alert alert-info mb-3">
-            Kamera başlatılıyor...
-          </div>
-          
-          <!-- Kamera Görünümü -->
-          <div class="position-relative mb-3">
-            <video id="video" autoplay playsinline class="border rounded" width="320" height="240"></video>
-            <canvas id="outputCanvas" class="position-absolute top-0 start-0" width="320" height="240"></canvas>
-            <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center">
-              <div class="border border-2 border-primary rounded-circle" style="width: 200px; height: 200px; border-style: dashed !important;"></div>
-            </div>
-          </div>
+ <div class="row">
+   <div class="col">
+     <div class="card shadow">
+       <div class="card-body text-center">
+         <h2 class="mb-4">Yüz Doğrulama</h2>
+         
+         <div id="statusIndicator" class="alert alert-info mb-3">
+           Kamera başlatılıyor...
+         </div>
+         
+         <div class="position-relative mb-3">
+           <video id="video" autoplay playsinline class="border rounded" width="320" height="240"></video>
+           <canvas id="outputCanvas" class="position-absolute top-0 start-0" width="320" height="240"></canvas>
+           <div class="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center">
+             <div class="border border-2 border-primary rounded-circle" style="width: 200px; height: 200px; border-style: dashed !important;"></div>
+           </div>
+         </div>
 
-          <!-- Göz Kırpma Sayacı Eklendi -->
-          <div id="blinkCounter" class="mb-3 fw-bold">
-            0 / 3 göz kırpma
-          </div>
+         <div id="blinkCounter" class="mb-3 fw-bold">
+           0 / 3 göz kırpma
+         </div>
 
-          <!-- İlerleme Çubuğu Eklendi -->
-          <div class="progress mb-3" style="height: 20px;">
-            <div id="verificationProgress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
-          </div>
+         <div class="progress mb-3" style="height: 20px;">
+           <div id="verificationProgress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+         </div>
 
-          <canvas id="canvas" style="display: none;"></canvas>
-          <form id="faceControlForm" action="{{ url_for('core.face_control', token=token) }}" method="post" enctype="multipart/form-data" style="display: none;">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="file" id="imageInput" name="image" accept="image/*">
-          </form>
-        </div>
-      </div>
-    </div>
-  </div>
+         <canvas id="canvas" style="display: none;"></canvas>
+         <form id="faceControlForm" action="{{ url_for('core.face_control', token=token) }}" method="post" enctype="multipart/form-data" style="display: none;">
+           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+           <input type="file" id="imageInput" name="image" accept="image/*">
+         </form>
+       </div>
+     </div>
+   </div>
+ </div>
 </div>
 
-<!-- MediaPipe Kütüphaneleri -->
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 
 <script>
-  const state = {
-    captureCount: 0,
-    matches: 0,
-    blinkCount: 0,
-    lastEyeState: 'open',
-    potentialBlink: false,
-    redirectUrl: null,
-    faceVerified: false,
-    EYE_AR_THRESH: 0.25,
-    EYE_AR_CONSEC_FRAMES: 1,
-    counter: 0,
-    total: 0
-  };
+ function log(message, data = null) {
+   const timestamp = new Date().toISOString();
+   console.log(`[${timestamp}] ${message}`);
+   if (data) console.log(JSON.stringify(data, null, 2));
+ }
 
-  const CONFIG = {
-    maxCaptures: 3,
-    requiredMatches: 2,
-    requiredBlinks: 3,
-    captureInterval: 1500,
-    blinkTimeout: 15000,
-    blinkMinDuration: 100,
-    blinkMaxDuration: 300
-  };
+ const state = {
+   captureCount: 0,
+   matches: 0,
+   blinkCount: 0,
+   lastEyeState: 'open',
+   potentialBlink: false,
+   redirectUrl: null,
+   faceVerified: false,
+   EYE_AR_THRESH: 0.25,
+   EYE_AR_CONSEC_FRAMES: 1,
+   counter: 0,
+   total: 0
+ };
 
-  // MediaPipe için göz landmark indeksleri
-  const LEFT_EYE_INDICES = [
-    33, 160, 158, 133, 153, 144  // Göz kenarları ve kapak noktaları
-];
+ const CONFIG = {
+   maxCaptures: 3,
+   requiredMatches: 2,
+   requiredBlinks: 3,
+   captureInterval: 1500,
+   blinkTimeout: 15000,
+   blinkMinDuration: 100,
+   blinkMaxDuration: 300
+ };
 
-const RIGHT_EYE_INDICES = [
-    362, 385, 387, 263, 373, 380  // Göz kenarları ve kapak noktaları
-];
+ const LEFT_EYE_INDICES = [33, 160, 158, 133, 153, 144];
+ const RIGHT_EYE_INDICES = [362, 385, 387, 263, 373, 380];
 
-  const elements = {
-    video: document.getElementById('video'),
-    canvas: document.getElementById('canvas'),
-    outputCanvas: document.getElementById('outputCanvas'),
-    form: document.getElementById('faceControlForm'),
-    imageInput: document.getElementById('imageInput'),
-    progress: document.getElementById('verificationProgress'),
-    status: document.getElementById('statusIndicator'),
-    blinkCounter: document.getElementById('blinkCounter')
-  };
+ const elements = {
+   video: document.getElementById('video'),
+   canvas: document.getElementById('canvas'),
+   outputCanvas: document.getElementById('outputCanvas'),
+   form: document.getElementById('faceControlForm'),
+   imageInput: document.getElementById('imageInput'),
+   progress: document.getElementById('verificationProgress'),
+   status: document.getElementById('statusIndicator'),
+   blinkCounter: document.getElementById('blinkCounter')
+ };
 
-  let faceMesh;
-  let camera;
+ let faceMesh;
+ let camera;
 
-  // MediaPipe kurulumu
-  async function setupMediaPipe() {
-    faceMesh = new FaceMesh({
-      locateFile: (file) => {
-        return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
-      }
-    });
+ async function setupMediaPipe() {
+   log('MediaPipe kurulumu başlıyor');
+   faceMesh = new FaceMesh({
+     locateFile: (file) => {
+       log(`MediaPipe dosyası yükleniyor: ${file}`);
+       return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+     }
+   });
 
-    faceMesh.setOptions({
-      maxNumFaces: 1,
-      refineLandmarks: true,
-      minDetectionConfidence: 0.5,
-      minTrackingConfidence: 0.5
-    });
+   faceMesh.setOptions({
+     maxNumFaces: 1,
+     refineLandmarks: true,
+     minDetectionConfidence: 0.5,
+     minTrackingConfidence: 0.5
+   });
 
-    faceMesh.onResults(onResults);
+   faceMesh.onResults(onResults);
+   log('MediaPipe yapılandırması tamamlandı');
 
-    camera = new Camera(elements.video, {
-      onFrame: async () => {
-        await faceMesh.send({image: elements.video});
-      },
-      width: 640,
-      height: 480
-    });
+   camera = new Camera(elements.video, {
+     onFrame: async () => {
+       await faceMesh.send({image: elements.video});
+     },
+     width: 640,
+     height: 480
+   });
 
-    await camera.start();
-    updateStatus('Yüz doğrulama başlıyor...', 'info');
-    startCapturing();
-  }
+   await camera.start();
+   log('Kamera başlatıldı');
+   updateStatus('Yüz doğrulama başlıyor...', 'info');
+   startCapturing();
+ }
 
-  // Mevcut kamera başlatma ve görüntü yakalama fonksiyonları
-  navigator.mediaDevices.getUserMedia({ video: true })
-    .then(stream => {
-      elements.video.srcObject = stream;
-      setupMediaPipe();
-    })
-    .catch(error => {
-      console.error("Kameraya erişim sağlanamadı:", error);
-      updateStatus('Kameraya erişim sağlanamadı!', 'danger');
-    });
+ navigator.mediaDevices.getUserMedia({ video: true })
+   .then(stream => {
+     log('Kamera erişimi başarılı');
+     elements.video.srcObject = stream;
+     setupMediaPipe();
+   })
+   .catch(error => {
+     log('Kamera erişim hatası', error);
+     console.error("Kameraya erişim sağlanamadı:", error);
+     updateStatus('Kameraya erişim sağlanamadı!', 'danger');
+   });
 
-  function startCapturing() {
-    state.captureCount = 0;
-    state.matches = 0;
-    state.redirectUrl = null;
-    
-    const captureInterval = setInterval(() => {
-      if (!state.faceVerified && state.captureCount < CONFIG.maxCaptures) {
-        captureImage();
-        state.captureCount++;
-      } else {
-        clearInterval(captureInterval);
-        if (!state.faceVerified) {
-          evaluateResults();
-        }
-      }
-    }, CONFIG.captureInterval);
-  }
+ function startCapturing() {
+   log('Yakalama döngüsü başlatılıyor', state);
+   state.captureCount = 0;
+   state.matches = 0;
+   state.redirectUrl = null;
+   
+   const captureInterval = setInterval(() => {
+     if (!state.faceVerified && state.captureCount < CONFIG.maxCaptures) {
+       log(`Görüntü yakalama #${state.captureCount + 1}`);
+       captureImage();
+       state.captureCount++;
+     } else {
+       log('Yakalama döngüsü tamamlandı', state);
+       clearInterval(captureInterval);
+       if (!state.faceVerified) {
+         evaluateResults();
+       }
+     }
+   }, CONFIG.captureInterval);
+ }
 
-  function captureImage() {
-    const context = elements.canvas.getContext('2d');
-    elements.canvas.width = elements.video.videoWidth;
-    elements.canvas.height = elements.video.videoHeight;
-    context.drawImage(elements.video, 0, 0);
+ function captureImage() {
+   log('Görüntü yakalama başladı');
+   const context = elements.canvas.getContext('2d');
+   elements.canvas.width = elements.video.videoWidth;
+   elements.canvas.height = elements.video.videoHeight;
+   context.drawImage(elements.video, 0, 0);
 
-    elements.canvas.toBlob(blob => {
-      const file = new File([blob], `capture_${state.captureCount}.jpg`, { type: "image/jpeg" });
-      const dataTransfer = new DataTransfer();
-      dataTransfer.items.add(file);
-      elements.imageInput.files = dataTransfer.files;
+   elements.canvas.toBlob(blob => {
+       log('Canvas görüntüsü blob\'a dönüştürüldü');
+       const file = new File([blob], 'capture.jpg', { type: "image/jpeg" });
+       const dataTransfer = new DataTransfer();
+       dataTransfer.items.add(file);
+       elements.imageInput.files = dataTransfer.files;
 
-      const formData = new FormData(elements.form);
+       const formData = new FormData(elements.form);
+       
+       log('Sunucuya görüntü gönderiliyor');
+       fetch(elements.form.action, {
+           method: "POST",
+           headers: {
+               'X-Requested-With': 'XMLHttpRequest'
+           },
+           body: formData
+       })
+       .then(response => response.json())
+       .then(data => {
+           log('Sunucu yanıtı', data);
+           if (data.success === "true") {
+               state.matches++;
+               updateProgress();
+               log('Eşleşme başarılı', {matches: state.matches});
+           }
+       })
+       .catch(error => {
+           log('Görüntü işleme hatası', error);
+           updateStatus('Görüntü işleme hatası!', 'warning');
+       });
+   }, 'image/jpeg', 0.95);
+ }
 
-      fetch(elements.form.action, {
-        method: "POST",
-        body: formData
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success === "true") {
-          state.matches++;
-          state.redirectUrl = data.redirect_url;
-          if (data.ear_value !== undefined) {
-            handleEyeState(data.eyes_closed === "true");  // String'i boolean'a çevirme
-        }
-          updateProgress();
+ function onResults(results) {
+   log('FaceMesh sonuçları alındı');
+   const ctx = elements.outputCanvas.getContext('2d');
+   ctx.clearRect(0, 0, elements.outputCanvas.width, elements.outputCanvas.height);
 
-          if (state.matches >= CONFIG.requiredMatches && !state.faceVerified) {
-            state.faceVerified = true;
-            startBlinkDetection();
-          }
-        }
-      })
-      .catch(error => {
-        console.error("İşlem hatası:", error);
-        updateStatus('Görüntü işleme hatası!', 'warning');
-      });
-    }, 'image/jpeg');
-  }
+   if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+       const landmarks = results.multiFaceLandmarks[0];
+       log('Landmark verileri alındı');
 
-  function onResults(results) {
-    const ctx = elements.outputCanvas.getContext('2d');
-    ctx.clearRect(0, 0, elements.outputCanvas.width, elements.outputCanvas.height);
+       if (!state.faceVerified) {
+           return;
+       }
 
-    if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
-        const landmarks = results.multiFaceLandmarks[0];
-        console.log("Landmark verileri mevcut.");
-        // Önce yüz doğrulama yapılmalı
-        if (!state.faceVerified) {
-            captureImage();
-            return;  // Yüz doğrulanmadan göz kırpma kontrolü yapma
-        }
+       if (state.faceVerified) {
+           const leftEAR = calculateEAR(landmarks, LEFT_EYE_INDICES);
+           const rightEAR = calculateEAR(landmarks, RIGHT_EYE_INDICES);
+           const avgEAR = (leftEAR + rightEAR) / 2.0;
+           log('EAR hesaplandı', {leftEAR, rightEAR, avgEAR});
 
-        // Yüz doğrulandıysa göz kırpma testi yap
-        if (state.faceVerified) {
-            const leftEAR = calculateEAR(landmarks, LEFT_EYE_INDICES);
-            const rightEAR = calculateEAR(landmarks, RIGHT_EYE_INDICES);
-            const avgEAR = (leftEAR + rightEAR) / 2.0;
-            console.log("EAR değeri:", avgEAR);
+           if (avgEAR < state.EYE_AR_THRESH) {
+               state.counter++;
+               if (!state.potentialBlink) {
+                   state.potentialBlink = true;
+                   log('Potansiyel göz kırpma tespit edildi');
+               }
+           } else {
+               if (state.potentialBlink && state.counter >= state.EYE_AR_CONSEC_FRAMES) {
+                   state.blinkCount++;
+                   log('Göz kırpma sayısı artırıldı', {blinkCount: state.blinkCount});
+                   updateBlinkUI();
+                   updateProgress();
 
-            if (avgEAR < state.EYE_AR_THRESH) {
-                state.counter++;
-                if (!state.potentialBlink) {
-                    state.potentialBlink = true;
-                }
-            } else {
-                if (state.potentialBlink && state.counter >= state.EYE_AR_CONSEC_FRAMES) {
-                    state.blinkCount++;
-                    updateBlinkUI();
-                    updateProgress();
+                   if (state.blinkCount >= CONFIG.requiredBlinks) {
+                       log('Gerekli göz kırpma sayısına ulaşıldı');
+                       onBlinkVerificationSuccess();
+                   }
+               }
+               state.counter = 0;
+               state.potentialBlink = false;
+           }
 
-                    if (state.blinkCount >= CONFIG.requiredBlinks) {
-                        onBlinkVerificationSuccess();
-                    }
-                }
-                state.counter = 0;
-                state.potentialBlink = false;
-            }
+           drawConnectors(ctx, landmarks, FACEMESH_TESSELATION, 
+               {color: '#C0C0C070', lineWidth: 1});
+           drawConnectors(ctx, landmarks, FACEMESH_RIGHT_EYE, 
+               {color: avgEAR < state.EYE_AR_THRESH ? 'red' : 'green', lineWidth: 2});
+           drawConnectors(ctx, landmarks, FACEMESH_LEFT_EYE,
+               {color: avgEAR < state.EYE_AR_THRESH ? 'red' : 'green', lineWidth: 2});
+       }
+   } else {
+       log('Landmark verileri alınamadı');
+   }
+ }
 
-            // Göz durumuna göre renk değiştir
-            drawConnectors(ctx, landmarks, FACEMESH_TESSELATION, 
-                {color: '#C0C0C070', lineWidth: 1});
-            drawConnectors(ctx, landmarks, FACEMESH_RIGHT_EYE, 
-                {color: avgEAR < state.EYE_AR_THRESH ? 'red' : 'green', lineWidth: 2});
-            drawConnectors(ctx, landmarks, FACEMESH_LEFT_EYE,
-                {color: avgEAR < state.EYE_AR_THRESH ? 'red' : 'green', lineWidth: 2});
-        }
-    }
-    else{
-      console.error("Landmark verileri alınamadı!")
-    }
-}
+ function calculateEAR(landmarks, indices) {
+   const points = indices.map(index => ({
+     x: landmarks[index].x,
+     y: landmarks[index].y 
+   }));
 
-  function calculateEAR(landmarks, indices) {
-    const points = indices.map(index => ({
-      x: landmarks[index].x,
-      y: landmarks[index].y 
-    }));
+   const height1 = distance(points[1], points[5]);
+   const height2 = distance(points[2], points[4]);
+   const width = distance(points[0], points[3]);
+   if(width===0) return 0;
+   
+   const ear = (height1 + height2) / (2.0 * width);
+   log('EAR hesaplandı', {ear});
+   return ear;
+ }
 
-    const height1 = distance(points[1], points[5]);
-    const height2 = distance(points[2], points[4]);
-    const width = distance(points[0], points[3]);
-    if(width===0)return 0;
-    const ear =(height1 + height2) / (2.0 * width);
-    console.log('Calculated EAR:', ear); // Debug için
-    return ear;
-  }
+ function distance(point1, point2) {
+   return Math.sqrt(
+     Math.pow(point1.x - point2.x, 2) +
+     Math.pow(point1.y - point2.y, 2)
+   );
+ }
 
-  function distance(point1, point2) {
-    return Math.sqrt(
-      Math.pow(point1.x - point2.x, 2) +
-      Math.pow(point1.y - point2.y, 2)
-    );
-  }
+ function evaluateResults() {
+   log('Sonuçlar değerlendiriliyor', state);
+   if (state.matches >= CONFIG.requiredMatches) {
+       state.faceVerified = true;
+       log('Yüz doğrulama başarılı');
+       startBlinkDetection();
+   } else {
+       log('Yüz doğrulama başarısız');
+       updateStatus('Yüz doğrulama başarısız. Tekrar deneniyor...', 'warning');
+       setTimeout(startCapturing, 1000);
+   }
+ }
 
-  function evaluateResults() {
-    if (state.matches >= CONFIG.requiredMatches && state.redirectUrl) {
-      state.faceVerified = true;
-      startBlinkDetection();
-    } else {
-      updateStatus('Yüz doğrulama başarısız. Tekrar deneniyor...', 'warning');
-      setTimeout(startCapturing, 1000);
-    }
-  }
+ function startBlinkDetection() {
+   log('Göz kırpma testi başlatılıyor');
+   updateStatus('Yüz doğrulama başarılı! Lütfen 3 kez göz kırpın.', 'success');
+   state.blinkCount = 0;
+   updateBlinkUI();
 
-  function startBlinkDetection() {
-    updateStatus('Yüz doğrulama başarılı! Lütfen 3 kez göz kırpın.', 'success');
-    state.blinkCount = 0;
-    updateBlinkUI();
+   setTimeout(() => {
+       if (state.blinkCount < CONFIG.requiredBlinks) {
+           log('Göz kırpma süresi doldu');
+           updateStatus('Göz kırpma süresi doldu. Tekrar deneyin.', 'warning');
+           resetDetection();
+       }
+   }, CONFIG.blinkTimeout);
+ }
 
-    setTimeout(() => {
-        if (state.blinkCount < CONFIG.requiredBlinks) {
-            updateStatus('Göz kırpma süresi doldu. Tekrar deneyin.', 'warning');
-            resetDetection();
-        }
-    }, CONFIG.blinkTimeout);
-}
-function onBlinkVerificationSuccess() {
-    // Son bir yüz doğrulama kontrolü yap
-    const context = elements.canvas.getContext('2d');
-    elements.canvas.width = elements.video.videoWidth;
-    elements.canvas.height = elements.video.videoHeight;
-    context.drawImage(elements.video, 0, 0);
+ function onBlinkVerificationSuccess() {
+   log('Son doğrulama başlatılıyor');
+   const context = elements.canvas.getContext('2d');
+   elements.canvas.width = elements.video.videoWidth;
+   elements.canvas.height = elements.video.videoHeight;
+   context.drawImage(elements.video, 0, 0);
 
-    elements.canvas.toBlob(blob => {
-        const file = new File([blob], 'final_verification.jpg', { type: "image/jpeg" });
-        const dataTransfer = new DataTransfer();
-        dataTransfer.items.add(file);
-        elements.imageInput.files = dataTransfer.files;
+   elements.canvas.toBlob(blob => {
+       const file = new File([blob], 'final_verification.jpg', { type: "image/jpeg" });
+       const dataTransfer = new DataTransfer();
+       dataTransfer.items.add(file);
+       elements.imageInput.files = dataTransfer.files;
 
-        const formData = new FormData(elements.form);
+       const formData = new FormData(elements.form);
 
-        updateStatus('Son güvenlik kontrolü yapılıyor...', 'info');
+       updateStatus('Son güvenlik kontrolü yapılıyor...', 'info');
 
-        fetch(elements.form.action, {
-            method: "POST",
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success === "true") {
-                // Son yüz doğrulama başarılı, oy verme işlemine geç
-                fetch('/blink_verification', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        blink_count: state.blinkCount,
-                        token: '{{ token }}'
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        updateStatus('Doğrulama başarılı! Yönlendiriliyorsunuz...', 'success');
-                        setTimeout(() => {
-                            window.location.href = data.redirect_url;
-                        }, 1000);
-                    } else {
-                        updateStatus('Doğrulama başarısız. Tekrar deneyin.', 'warning');
-                        resetDetection();
-                    }
-                })
-                .catch(error => {
-                    console.error("Doğrulama hatası:", error);
-                    updateStatus('Doğrulama işlemi sırasında bir hata oluştu.', 'danger');
-                });
-            } else {
-                // Son yüz doğrulama başarısız
-                updateStatus('Son güvenlik kontrolü başarısız. Tekrar deneyin.', 'warning');
-                resetDetection();
-            }
-        })
-        .catch(error => {
-            console.error("Son yüz doğrulama hatası:", error);
-            updateStatus('Son güvenlik kontrolü sırasında bir hata oluştu.', 'danger');
-            resetDetection();
-        });
-    }, 'image/jpeg');
-}
+       fetch(elements.form.action, {
+           method: "POST",
+           body: formData
+       })
+       .then(response => response.json())
+       .then(data => {
+           log('Son doğrulama yanıtı', data);
+           if (data.success === "true") {
+               fetch('/blink_verification', {
+                   method: 'POST',
+                   headers: {
+                       'Content-Type': 'application/json',
+                   },
+                   body: JSON.stringify({
+                       blink_count: state.blinkCount,
+                       token: '{{ token }}'
+                   })
+               })
+               .then(response => response.json())
+               .then(data => {
+                   log('Göz kırpma doğrulama yanıtı', data);
+                   if (data.success) {
+                       updateStatus('Doğrulama başarılı! Yönlendiriliyorsunuz...', 'success');
+                       setTimeout(() => {
+                           window.location.href = data.redirect_url;
+                       }, 1000);
+                   } else {
+                       updateStatus('Doğrulama başarısız. Tekrar deneyin.', 'warning');
+                       resetDetection();
+                   }
+               })
+               .catch(error => {
+                   log('Göz kırpma doğrulama hatası', error);
+                   updateStatus('Doğrulama işlemi sırasında bir hata oluştu.', 'danger');
+               });
+           } else {
+               log('Son güvenlik kontrolü başarısız');
+               updateStatus('Son güvenlik kontrolü başarısız. Tekrar deneyin.', 'warning');
+               resetDetection();
+           }
+       })
+       .catch(error => {
+           log('Son doğrulama hatası', error);
+           // Önceki kodun devamı...
 
-  function updateStatus(message, type = 'info') {
-    elements.status.className = `alert alert-${type} mb-3`;
-    elements.status.textContent = message;
-  }
+           updateStatus('Son güvenlik kontrolü sırasında bir hata oluştu.', 'danger');
+           resetDetection();
+       });
+   }, 'image/jpeg');
+ }
 
-  function updateProgress() {
-    let progress;
-    if (!state.faceVerified) {
-        progress = (state.matches / CONFIG.requiredMatches) * 50;
-    } else {
-        progress = 50 + (state.blinkCount / CONFIG.requiredBlinks) * 50;
-    }
-    elements.progress.style.width = `${progress}%`;
-}
+ function updateStatus(message, type = 'info') {
+   log('Durum güncelleniyor', {message, type});
+   elements.status.className = `alert alert-${type} mb-3`;
+   elements.status.textContent = message;
+ }
 
-  function updateBlinkUI() {
-    elements.blinkCounter.textContent = `${state.blinkCount} / ${CONFIG.requiredBlinks} göz kırpma`;
-  }
+ function updateProgress() {
+   let progress;
+   if (!state.faceVerified) {
+       progress = (state.matches / CONFIG.requiredMatches) * 50;
+   } else {
+       progress = 50 + (state.blinkCount / CONFIG.requiredBlinks) * 50;
+   }
+   log('İlerleme güncelleniyor', {progress});
+   elements.progress.style.width = `${progress}%`;
+ }
 
-  function resetDetection() {
-    state.captureCount = 0;
-    state.matches = 0;
-    state.blinkCount = 0;
-    state.lastEyeState = 'open';
-    state.potentialBlink = false;
-    state.faceVerified = false;
-    updateBlinkUI();
-    updateProgress();
-    startCapturing();
-  }
+ function updateBlinkUI() {
+   log('Göz kırpma UI güncelleniyor', {blinkCount: state.blinkCount});
+   elements.blinkCounter.textContent = `${state.blinkCount} / ${CONFIG.requiredBlinks} göz kırpma`;
+ }
+
+ function resetDetection() {
+   log('Sistem sıfırlanıyor');
+   state.captureCount = 0;
+   state.matches = 0;
+   state.blinkCount = 0;
+   state.lastEyeState = 'open';
+   state.potentialBlink = false;
+   state.faceVerified = false;
+   updateBlinkUI();
+   updateProgress();
+   startCapturing();
+ }
 </script>
 {% endblock %}
