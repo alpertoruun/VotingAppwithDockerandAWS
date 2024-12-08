@@ -581,35 +581,36 @@ def joined_elections():
     sort_by = request.args.get('sort_by', 'created_at')
     order = request.args.get('order', 'desc')
     search = request.args.get('search', '')
+    per_page = 10
 
     # Base query
-    query = Election.query.join(VoteToken, VoteToken.election_id == Election.id)\
+    elections_query = Election.query.join(VoteToken, VoteToken.election_id == Election.id)\
         .filter(VoteToken.user_id == current_user.id)
     
     # Search functionality
     if search:
-        query = query.filter(Election.title.ilike(f'%{search}%'))
+        elections_query = elections_query.filter(Election.title.ilike(f"%{search}%"))
     
     # Sorting
-    sort_column = getattr(Election, sort_by, Election.created_at)
-    if order == 'desc':
-        sort_column = sort_column.desc()
-    query = query.order_by(sort_column)
+    if order == 'asc':
+        elections_query = elections_query.order_by(getattr(Election, sort_by).asc())
+    else:
+        elections_query = elections_query.order_by(getattr(Election, sort_by).desc())
     
-    # Pagination
-    pagination = query.paginate(page=page, per_page=10, error_out=False)
-    elections = pagination.items
+    # Pagination ve şifreleme işlemi
+    elections = elections_query.paginate(page=page, per_page=per_page, error_out=True)
+    encrypted_elections = [(encrypt_id(election.id), election) for election in elections.items]
 
-    # For AJAX requests (search functionality)
+    # AJAX isteği kontrolü
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return render_template('core/joined_election_table.html',
-                             elections=[(election.get_encrypted_id(), election) for election in elections],
-                             pagination=pagination,
+                             elections=encrypted_elections,
+                             pagination=elections,
                              sort_by=sort_by,
                              order=order)
 
     return render_template('core/joined_elections.html',
-                         elections=[(election.get_encrypted_id(), election) for election in elections],
-                         pagination=pagination,
+                         elections=encrypted_elections,
+                         pagination=elections,
                          sort_by=sort_by,
                          order=order)
