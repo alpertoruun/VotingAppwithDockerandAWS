@@ -1,219 +1,182 @@
 {% extends "_base.html" %}
-
 {% block content %}
-<style>
-    :root {
-        --primary-color: #4f46e5;
-        --primary-hover: #4338ca;
-        --success-color: #059669;
-        --success-hover: #047857;
-        --warning-color: #f59e0b;
-        --warning-hover: #d97706;
-        --border-color: #e5e7eb;
-        --bg-color: #ffffff;
-        --text-color: #374151;
-    }
-
-    body {
-        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-        min-height: 100vh;
-    }
-
-    .container {
-        padding-top: 2rem;
-        padding-bottom: 2rem;
-    }
-
-    .card {
-        border: none;
-        border-radius: 1rem;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-        margin-bottom: 2rem;
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
-        animation: fadeIn 0.5s ease-out;
-    }
-
-    .card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
-    }
-
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .card-header {
-        background: none;
-        border-bottom: 1px solid var(--border-color);
-        padding: 1.5rem;
-    }
-
-    .card-header h4 {
-        color: var(--text-color);
-        font-weight: 600;
-        margin: 0;
-    }
-
-    .card-body {
-        padding: 1.5rem;
-    }
-
-    .card-title {
-        color: var(--text-color);
-        font-size: 1.25rem;
-        font-weight: 600;
-        margin-bottom: 1.5rem;
-    }
-
-    .form-control {
-        border: 2px solid var(--border-color);
-        border-radius: 0.5rem;
-        padding: 0.75rem 1rem;
-        transition: all 0.2s ease;
-    }
-
-    .form-control:focus {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
-        outline: none;
-    }
-
-    .form-label {
-        color: var(--text-color);
-        font-weight: 500;
-    }
-
-    .form-check-input {
-        width: 1.2rem;
-        height: 1.2rem;
-        margin-top: 0.2rem;
-        border: 2px solid var(--border-color);
-        transition: all 0.2s ease;
-    }
-
-    .form-check-input:checked {
-        background-color: var(--primary-color);
-        border-color: var(--primary-color);
-    }
-
-    .btn {
-        padding: 0.75rem 1.5rem;
-        border-radius: 0.5rem;
-        font-weight: 500;
-        transition: all 0.2s ease;
-    }
-
-    .btn-primary {
-        background-color: var(--primary-color);
-        border: none;
-    }
-
-    .btn-primary:hover {
-        background-color: var(--primary-hover);
-        transform: translateY(-1px);
-    }
-
-    .btn-success {
-        background-color: var(--success-color);
-        border: none;
-    }
-
-    .btn-success:hover {
-        background-color: var(--success-hover);
-        transform: translateY(-1px);
-    }
-
-    .btn-warning {
-        background-color: var(--warning-color);
-        border: none;
-        color: white;
-    }
-
-    .btn-warning:hover {
-        background-color: var(--warning-hover);
-        color: white;
-        transform: translateY(-1px);
-    }
-
-    .form-floating {
-        margin-bottom: 1rem;
-    }
-
-    .form-floating > .form-control {
-        padding: 1rem 0.75rem;
-    }
-
-    .form-floating > label {
-        padding: 1rem 0.75rem;
-    }
-
-    #voter-fields {
-        animation: slideDown 0.3s ease-out;
-    }
-
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    /* Dosya yükleme alanı özelleştirmesi */
-    input[type="file"] {
-        padding: 0.5rem;
-        font-size: 0.9rem;
-    }
-
-    input[type="file"]::file-selector-button {
-        padding: 0.5rem 1rem;
-        border-radius: 0.5rem;
-        border: none;
-        background-color: var(--primary-color);
-        color: white;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        margin-right: 1rem;
-    }
-
-    input[type="file"]::file-selector-button:hover {
-        background-color: var(--primary-hover);
-    }
-
-    @media (max-width: 768px) {
-        .container {
-            padding-top: 1rem;
-        }
-        
-        .card {
-            margin-bottom: 1rem;
-        }
-        
-        .card-body {
-            padding: 1rem;
-        }
-    }
-</style>
-
-<!-- Orijinal HTML içeriği buraya gelecek, değişiklik yok -->
-<div class="container mt-5">
+<div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-6">
-            <!-- Mevcut içerik aynen korunuyor -->
-            {{ super() }}
+        <div class="col-lg-8 col-xl-7">
+            <!-- Kullanıcı Bilgileri -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
+                <div class="card-header bg-primary text-white py-3">
+                    <h4 class="mb-0 fw-bold">Kullanıcı Bilgileri</h4>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-envelope text-primary me-3 fs-4"></i>
+                        <div>
+                            <small class="text-muted d-block">Email Adresi</small>
+                            <p class="mb-0 fw-medium">{{ user.email }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- E-posta Değiştir -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <i class="fas fa-envelope-open text-primary me-3 fs-4"></i>
+                        <h5 class="card-title mb-0 fw-bold">E-posta Değiştir</h5>
+                    </div>
+                    <form method="POST">
+                        {{ email_form.hidden_tag() }}
+                        <div class="mb-4">
+                            {{ email_form.email.label(class="form-label fw-medium") }}
+                            {{ email_form.email(class="form-control form-control-lg bg-light border-0", size=32) }}
+                        </div>
+                        <button type="submit" name="email" class="btn btn-primary px-4 py-2 fw-medium">
+                            <i class="fas fa-paper-plane me-2"></i>Onay Bağlantısını Gönder
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Şifre Değiştir -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <i class="fas fa-lock text-primary me-3 fs-4"></i>
+                        <h5 class="card-title mb-0 fw-bold">Şifre Değiştir</h5>
+                    </div>
+                    <form method="POST">
+                        {{ password_form.hidden_tag() }}
+                        <div class="mb-3">
+                            {{ password_form.current_password.label(class="form-label fw-medium") }}
+                            {{ password_form.current_password(class="form-control form-control-lg bg-light border-0") }}
+                        </div>
+                        <div class="mb-3">
+                            {{ password_form.new_password.label(class="form-label fw-medium") }}
+                            {{ password_form.new_password(class="form-control form-control-lg bg-light border-0") }}
+                        </div>
+                        <div class="mb-4">
+                            {{ password_form.confirm_password.label(class="form-label fw-medium") }}
+                            {{ password_form.confirm_password(class="form-control form-control-lg bg-light border-0") }}
+                        </div>
+                        <button type="submit" name="password" class="btn btn-success px-4 py-2 fw-medium">
+                            <i class="fas fa-key me-2"></i>Şifre Değiştir
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Seçmen Hesabına Geçiş -->
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <i class="fas fa-user-check text-primary me-3 fs-4"></i>
+                        <h5 class="card-title mb-0 fw-bold">Seçmen Hesabına Geçiş</h5>
+                    </div>
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="form-check form-switch mb-4">
+                            <input type="checkbox"
+                                   id="is_voter"
+                                   class="form-check-input"
+                                   name="voter"
+                                   onclick="toggleVoterFields()"
+                                   role="switch" />
+                            <label for="is_voter" class="form-check-label fw-medium">
+                                Seçmen hesabına geçiş yapmak istiyorum
+                            </label>
+                        </div>
+                        <div id="voter-fields" style="display: none;">
+                            <div class="form-floating mb-3">
+                                <input type="text"
+                                       id="tc"
+                                       name="tc"
+                                       class="form-control form-control-lg bg-light border-0"
+                                       placeholder="TC Kimlik Numarası" />
+                                <label for="tc">TC Kimlik Numarası</label>
+                            </div>
+                            <div class="form-floating mb-3">
+                                <input type="text"
+                                       id="name"
+                                       name="name"
+                                       class="form-control form-control-lg bg-light border-0"
+                                       placeholder="İsim" />
+                                <label for="name">İsim</label>
+                            </div>
+                            <div class="form-floating mb-4">
+                                <input type="text"
+                                       id="surname"
+                                       name="surname"
+                                       class="form-control form-control-lg bg-light border-0"
+                                       placeholder="Soyisim" />
+                                <label for="surname">Soyisim</label>
+                            </div>
+                            <div class="mb-4">
+                                <label for="face_photo" class="form-label fw-medium mb-2">
+                                    <i class="fas fa-camera me-2"></i>Yüz Fotoğrafı Yükleyin
+                                </label>
+                                <input type="file"
+                                       id="face_photo"
+                                       name="face_photo"
+                                       class="form-control form-control-lg bg-light border-0"
+                                       accept="image/*" />
+                            </div>
+                            <button type="submit" class="btn btn-warning px-4 py-2 fw-medium">
+                                <i class="fas fa-user-plus me-2"></i>Seçmen Hesabına Geçiş Yap
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<style>
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.08) !important;
+}
+
+.form-control {
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    box-shadow: none;
+    border-color: #0d6efd;
+    background-color: #fff !important;
+}
+
+.btn {
+    transition: all 0.3s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.form-check-input {
+    width: 3em;
+    height: 1.5em;
+    cursor: pointer;
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+    color: #0d6efd;
+}
+</style>
 
 <script>
     function toggleVoterFields() {

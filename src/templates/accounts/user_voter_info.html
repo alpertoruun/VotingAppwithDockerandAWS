@@ -1,97 +1,146 @@
 {% extends "_base.html" %}
 {% block content %}
-<div class="container mt-5">
+<div class="container py-5">
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-lg-8">
             <!-- Profil Kartı -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-body text-center">
-                    <!-- Profil Fotoğrafı -->
-                    <div class="profile-photo mb-3">
-                        <img
-                        src="/{{ user.face_recognition.image_path }}" 
-                        alt="Profil Fotoğrafı" 
-                        class="rounded-circle img-thumbnail" 
-                        style="width: 150px; height: 150px; object-fit: cover;">
+            <div class="card border-0 shadow-lg rounded-4 mb-4 hover-card">
+                <div class="card-body p-4">
+                    <!-- Profil Başlığı -->
+                    <div class="text-center mb-4">
+                        <h4 class="fw-bold text-primary mb-3">Seçmen Profili</h4>
                     </div>
+                    
+                    <!-- Profil Fotoğrafı -->
+                    <div class="text-center mb-4">
+                        <div class="profile-photo-container mx-auto">
+                            <img src="/{{ user.face_recognition.image_path }}" 
+                                 alt="Profil Fotoğrafı" 
+                                 class="rounded-circle profile-photo shadow">
+                        </div>
+                    </div>
+
                     <!-- Yüz Doğrulama Durumu -->
-                    <h5 class="mb-4">
-                        Yüz doğrulama durumu:
+                    <div class="verification-status text-center mb-4">
+                        <h5 class="fw-bold mb-3">Yüz Doğrulama Durumu</h5>
                         {% if user.is_face_approved %}
-                            <strong class="text-success">Onaylanmış</strong>
+                            <div class="status-badge bg-success-soft text-success py-2 px-4 rounded-pill d-inline-flex align-items-center">
+                                <i class="fas fa-check-circle me-2"></i>
+                                <span class="fw-medium">Onaylanmış</span>
+                            </div>
                         {% else %}
-                            <strong class="text-danger">Onaylanmamış</strong>
-                            <br>
-                            <a href="{{ url_for('core.face_approve', encrypted_user_id=encrypt_id(user.id)) }}" class="text-primary">
-                                Fotoğrafınızı doğrulamak için tıklayınız
-                            </a>
+                            <div class="d-flex flex-column align-items-center">
+                                <div class="status-badge bg-danger-soft text-danger py-2 px-4 rounded-pill mb-3 d-inline-flex align-items-center">
+                                    <i class="fas fa-times-circle me-2"></i>
+                                    <span class="fw-medium">Onaylanmamış</span>
+                                </div>
+                                <a href="{{ url_for('core.face_approve', encrypted_user_id=encrypt_id(user.id)) }}" 
+                                   class="btn btn-primary rounded-pill px-4 hover-lift">
+                                    <i class="fas fa-camera me-2"></i>Fotoğrafınızı Doğrulayın
+                                </a>
+                            </div>
                         {% endif %}
-                    </h5>
+                    </div>
+
                     <!-- Kullanıcı Bilgileri -->
-                    <p><strong>Email:</strong> {{ user.email }}</p>
-                    {% if user.tc %}
-                        <p><strong>TC Kimlik Numarası:</strong> {{ user.tc }}</p>
-                        <p><strong>İsim:</strong> {{ user.name }}</p>
-                        <p><strong>Soyisim:</strong> {{ user.surname }}</p>
-                    {% endif %}
+                    <div class="user-info bg-light rounded-4 p-4">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <label class="text-muted small">Email</label>
+                                    <p class="mb-0 fw-medium">{{ user.email }}</p>
+                                </div>
+                            </div>
+                            {% if user.tc %}
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <label class="text-muted small">TC Kimlik Numarası</label>
+                                    <p class="mb-0 fw-medium">{{ user.tc }}</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <label class="text-muted small">İsim</label>
+                                    <p class="mb-0 fw-medium">{{ user.name }}</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <label class="text-muted small">Soyisim</label>
+                                    <p class="mb-0 fw-medium">{{ user.surname }}</p>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- E-posta Değişikliği Kartı -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-body">
-                    <h5 class="card-title text-center">E-posta Değiştir</h5>
+            <div class="card border-0 shadow-lg rounded-4 mb-4 hover-card">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <i class="fas fa-envelope text-primary fs-4 me-3"></i>
+                        <h5 class="card-title mb-0 fw-bold">E-posta Değiştir</h5>
+                    </div>
                     <form method="POST">
                         {{ email_form.hidden_tag() }}
-                        <div class="mb-3">
-                            {{ email_form.email.label(class="form-label") }}
-                            {{ email_form.email(class="form-control", size=32) }}
+                        <div class="mb-4">
+                            {{ email_form.email.label(class="form-label fw-medium") }}
+                            {{ email_form.email(class="form-control form-control-lg bg-light border-0", size=32) }}
                         </div>
-                        <button type="submit" name="email" class="btn btn-primary w-100">Onay bağlantısını gönder</button>
+                        <button type="submit" name="email" class="btn btn-primary w-100 py-3 rounded-3 fw-medium hover-lift">
+                            <i class="fas fa-paper-plane me-2"></i>Onay Bağlantısını Gönder
+                        </button>
                     </form>
                 </div>
             </div>
 
             <!-- Şifre Değişikliği Kartı -->
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h5 class="card-title text-center">Şifre Değiştir</h5>
+            <div class="card border-0 shadow-lg rounded-4 hover-card">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center mb-4">
+                        <i class="fas fa-lock text-primary fs-4 me-3"></i>
+                        <h5 class="card-title mb-0 fw-bold">Şifre Değiştir</h5>
+                    </div>
                     <form method="POST">
                         {{ password_form.hidden_tag() }}
                         <div class="mb-3">
-                            {{ password_form.current_password.label(class="form-label") }}
-                            {{ password_form.current_password(class="form-control") }}
+                            {{ password_form.current_password.label(class="form-label fw-medium") }}
+                            {{ password_form.current_password(class="form-control form-control-lg bg-light border-0") }}
                             {% if password_form.current_password.errors %}
-                                <div class="alert alert-danger">
+                                <div class="alert alert-danger mt-2 py-2 rounded-3">
                                     {% for error in password_form.current_password.errors %}
-                                        <p>{{ error }}</p>
+                                        <p class="mb-0 small">{{ error }}</p>
                                     {% endfor %}
                                 </div>
                             {% endif %}
                         </div>
                         <div class="mb-3">
-                            {{ password_form.new_password.label(class="form-label") }}
-                            {{ password_form.new_password(class="form-control") }}
+                            {{ password_form.new_password.label(class="form-label fw-medium") }}
+                            {{ password_form.new_password(class="form-control form-control-lg bg-light border-0") }}
                             {% if password_form.new_password.errors %}
-                                <div class="alert alert-danger">
+                                <div class="alert alert-danger mt-2 py-2 rounded-3">
                                     {% for error in password_form.new_password.errors %}
-                                        <p>{{ error }}</p>
+                                        <p class="mb-0 small">{{ error }}</p>
                                     {% endfor %}
                                 </div>
                             {% endif %}
                         </div>
-                        <div class="mb-3">
-                            {{ password_form.confirm_password.label(class="form-label") }}
-                            {{ password_form.confirm_password(class="form-control") }}
+                        <div class="mb-4">
+                            {{ password_form.confirm_password.label(class="form-label fw-medium") }}
+                            {{ password_form.confirm_password(class="form-control form-control-lg bg-light border-0") }}
                             {% if password_form.confirm_password.errors %}
-                                <div class="alert alert-danger">
+                                <div class="alert alert-danger mt-2 py-2 rounded-3">
                                     {% for error in password_form.confirm_password.errors %}
-                                        <p>{{ error }}</p>
+                                        <p class="mb-0 small">{{ error }}</p>
                                     {% endfor %}
                                 </div>
                             {% endif %}
                         </div>
-                        <button type="submit" name="password" class="btn btn-success w-100">Şifre değiştir</button>
+                        <button type="submit" name="password" class="btn btn-success w-100 py-3 rounded-3 fw-medium hover-lift">
+                            <i class="fas fa-key me-2"></i>Şifre Değiştir
+                        </button>
                     </form>
                 </div>
             </div>
@@ -100,156 +149,88 @@
 </div>
 
 <style>
-    :root {
-        --primary-color: #4f46e5;
-        --primary-hover: #4338ca;
-        --success-color: #10b981;
-        --danger-color: #ef4444;
-        --text-color: #374151;
-        --border-color: #e5e7eb;
-    }
+/* Temel Stiller */
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
 
-    body {
-        background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
-        min-height: 100vh;
-    }
+.hover-card:hover {
+    transform: translateY(-5px);
+}
 
+/* Profil Fotoğrafı */
+.profile-photo-container {
+    width: 180px;
+    height: 180px;
+    padding: 5px;
+    background: linear-gradient(45deg, #0d6efd, #0dcaf0);
+    border-radius: 50%;
+}
+
+.profile-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: 4px solid white;
+}
+
+/* Durum Rozetleri */
+.bg-success-soft {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.bg-danger-soft {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* Form Elemanları */
+.form-control {
+    transition: all 0.2s ease;
+}
+
+.form-control:focus {
+    box-shadow: none;
+    background-color: white !important;
+    border-color: #0d6efd;
+}
+
+/* Butonlar */
+.hover-lift {
+    transition: all 0.3s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.btn {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+/* Bilgi Öğeleri */
+.info-item {
+    background: white;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    height: 100%;
+}
+
+/* Hata Mesajları */
+.alert {
+    border: none;
+}
+
+/* Responsive Düzenlemeler */
+@media (max-width: 768px) {
     .container {
-        padding: 2rem 1rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
-
-    .card {
-        border: none;
-        border-radius: 1.5rem;
-        background: #ffffff;
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        margin-bottom: 2rem;
-        animation: fadeIn 0.5s ease-out;
+    
+    .card-body {
+        padding: 1.5rem;
     }
-
-    .card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
-    }
-
-    .profile-photo img {
-        width: 180px;
-        height: 180px;
-        object-fit: cover;
-        border-radius: 50%;
-        border: 4px solid #ffffff;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        transition: transform 0.3s ease;
-    }
-
-    .profile-photo img:hover {
-        transform: scale(1.05);
-    }
-
-    .card-title {
-        color: var(--text-color);
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin-bottom: 1.5rem;
-    }
-
-    .text-success {
-        color: var(--success-color) !important;
-        font-weight: 600;
-    }
-
-    .text-danger {
-        color: var(--danger-color) !important;
-        font-weight: 600;
-    }
-
-    .text-primary {
-        color: var(--primary-color) !important;
-        text-decoration: none;
-        transition: color 0.2s ease;
-    }
-
-    .text-primary:hover {
-        color: var(--primary-hover) !important;
-        text-decoration: underline;
-    }
-
-    .form-control {
-        border: 2px solid var(--border-color);
-        border-radius: 0.75rem;
-        padding: 0.75rem 1rem;
-        transition: all 0.2s ease;
-    }
-
-    .form-control:focus {
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
-    }
-
-    .btn {
-        padding: 0.75rem 1.5rem;
-        border-radius: 0.75rem;
-        font-weight: 500;
-        transition: all 0.2s ease;
-    }
-
-    .btn-primary {
-        background-color: var(--primary-color);
-        border: none;
-    }
-
-    .btn-primary:hover {
-        background-color: var(--primary-hover);
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
-    }
-
-    .btn-success {
-        background-color: var(--success-color);
-        border: none;
-    }
-
-    .btn-success:hover {
-        background-color: #059669;
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
-    }
-
-    .alert-danger {
-        background-color: #fef2f2;
-        border: 1px solid #fee2e2;
-        color: var(--danger-color);
-        border-radius: 0.75rem;
-        padding: 0.75rem 1rem;
-        margin-top: 0.5rem;
-        font-size: 0.875rem;
-    }
-
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    @media (max-width: 768px) {
-        .container {
-            padding: 1rem;
-        }
-
-        .card-body {
-            padding: 1.5rem;
-        }
-
-        .profile-photo img {
-            width: 150px;
-            height: 150px;
-        }
-    }
+}
 </style>
 {% endblock %}

@@ -379,7 +379,7 @@
  function updateProgress() {
    let progress;
    if (!state.faceVerified) {
-       progress = (state.matches / CONFIG.requiredMatches) * 50;
+       progress = (state.matches / CONFIG.requiredMatches) * 33;
    } else {
        progress = 50 + (state.blinkCount / CONFIG.requiredBlinks) * 50;
    }

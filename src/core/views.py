@@ -516,7 +516,32 @@ def create_election():
 
         # Hata kontrolü
         error = False
+        # TC'lerin benzersiz olduğunu kontrol et
+        if len(voter_tcs) != len(set(voter_tcs)):
+            flash("Aynı TC kimlik numarası birden fazla kez eklenemez.", "warning")
+            return redirect(url_for('core.create_election'))
 
+        # Kullanıcıları doğrula
+        valid_users = []
+        used_tcs = set()  # Kullanılan TC'leri takip et
+        
+        for tc in voter_tcs:
+            # TC zaten eklenmişse atla
+            if tc in used_tcs:
+                continue
+                
+            user = User.query.filter_by(tc=tc).first()
+            if not user or not user.is_mail_approved or not user.is_face_approved:
+                flash(f"{tc} kimlik numarasına sahip onaylı bir kullanıcı bulunamadı.", "warning")
+                error = True
+                break
+                
+            valid_users.append(user)
+            used_tcs.add(tc)  # TC'yi kullanılanlar listesine ekle
+
+        # Hata varsa formu tekrar yükle
+        if error:
+            return redirect(url_for('core.create_election'))
         # Kullanıcıları doğrula
         valid_users = []
         for tc in voter_tcs:

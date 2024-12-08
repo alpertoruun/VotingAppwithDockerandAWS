@@ -53,6 +53,91 @@ def user_info(user_id):
     email_form = EmailChangeForm()
     password_form = PasswordChangeForm()
 
+    if request.method == 'POST':
+        # Email değiştirme formu gönderildiğinde
+        if 'email' in request.form:
+            if email_form.validate_on_submit():
+                try:
+                    new_email = email_form.email.data
+                    if User.query.filter_by(email=new_email).first():
+                        flash('Bu email adresi zaten kullanımda.', 'danger')
+                    else:
+                        # E-posta değişikliği için token oluştur
+                        token = create_update_email_entry(user.id, new_email)
+                        # E-posta güncelleme bağlantısını gönder
+                        send_update_email(new_email, token)
+                        flash('E-posta değiştirme bağlantısı gönderildi.', 'success')
+                except Exception as e:
+                    flash('E-posta güncelleme işlemi sırasında bir hata oluştu.', 'danger')
+                return redirect(url_for('accounts.user_info', user_id=user_id))
+
+        # Şifre değiştirme formu gönderildiğinde
+        elif 'password' in request.form:
+            if password_form.validate_on_submit():
+                try:
+                    # Mevcut şifreyi kontrol et
+                    if bcrypt.check_password_hash(user.password, password_form.current_password.data):
+                        if password_form.current_password.data == password_form.new_password.data:
+                            flash('Yeni şifreniz mevcut şifrenizle aynı olamaz.', 'danger')
+                        else:
+                            # Yeni şifreyi hashle ve güncelle
+                            hashed_password = bcrypt.generate_password_hash(password_form.new_password.data).decode('utf-8')
+                            user.password = hashed_password
+                            db.session.commit()
+                            flash('Şifreniz başarıyla güncellendi.', 'success')
+                    else:
+                        flash('Mevcut şifreniz yanlış.', 'danger')
+                except Exception as e:
+                    db.session.rollback()
+                    flash('Şifre güncelleme işlemi sırasında bir hata oluştu.', 'danger')
+                return redirect(url_for('accounts.user_info', user_id=user_id))
+
+        # Kullanıcının seçmen hesabına geçiş talebini işleme
+        elif 'voter' in request.form:
+            tc = request.form.get('tc')
+            name = request.form.get('name')
+            surname = request.form.get('surname')
+            face_photo = request.files.get('face_photo')
+
+            errors = []
+            if not tc or len(tc) != 11:
+                errors.append("TC kimlik numarası 11 haneli olmalıdır.")
+            if User.query.filter_by(tc=tc).first():
+                errors.append("Bu TC kimlik numarası zaten kullanılıyor.")
+            if not name or not surname:
+                errors.append("İsim ve soyisim alanları doldurulmalıdır.")
+            if not face_photo:
+                errors.append("Yüz fotoğrafı yüklenmelidir.")
+
+            if errors:
+                for error in errors:
+                    flash(error, 'danger')
+            else:
+                try:
+                    # Fotoğraf kaydet ve yüz encoding işlemini gerçekleştir
+                    photo_path = save_photo(face_photo)
+                    face_encoding = get_face_encoding(photo_path)
+
+                    if face_encoding is None or len(face_encoding) == 0:
+                        flash("Yüz tanıma işlemi başarısız oldu. Lütfen uygun bir fotoğraf yükleyin.", 'danger')
+                    else:
+                        # Kullanıcıyı seçmen olarak güncelle
+                        face_recognition_entry = FaceRecognition(encoding=face_encoding, image_path=photo_path)
+                        db.session.add(face_recognition_entry)
+                        db.session.commit()
+
+                        user.tc = tc
+                        user.name = name
+                        user.surname = surname
+                        user.face_id = face_recognition_entry.id
+                        db.session.commit()
+
+                        flash('Seçmen hesabına geçiş başarılı!', 'success')
+                        return redirect(url_for('accounts.user_info', user_id=user_id))
+                except Exception as e:
+                    db.session.rollback()
+                    flash('Seçmen hesabına geçiş sırasında bir hata oluştu.', 'danger')
+
     # Eğer seçmen bilgileri mevcutsa doğrudan `user_voter_info.html`'i döndür
     if user.tc:
         return render_template(
@@ -62,56 +147,13 @@ def user_info(user_id):
             password_form=password_form,
         )
 
-    # Kullanıcının seçmen hesabına geçiş talebini işleme
-    if request.method == 'POST' and 'voter' in request.form:
-        tc = request.form.get('tc')
-        name = request.form.get('name')
-        surname = request.form.get('surname')
-        face_photo = request.files.get('face_photo')
-
-        errors = []
-        if not tc or len(tc) != 11:
-            errors.append("TC kimlik numarası 11 haneli olmalıdır.")
-        if User.query.filter_by(tc=tc).first():
-            errors.append("Bu TC kimlik numarası zaten kullanılıyor.")
-        if not name or not surname:
-            errors.append("İsim ve soyisim alanları doldurulmalıdır.")
-        if not face_photo:
-            errors.append("Yüz fotoğrafı yüklenmelidir.")
-
-        if errors:
-            for error in errors:
-                flash(error, 'danger')
-        else:
-            # Fotoğraf kaydet ve yüz encoding işlemini gerçekleştir
-            photo_path = save_photo(face_photo)
-            face_encoding = get_face_encoding(photo_path)
-
-            if face_encoding is None or len(face_encoding) == 0:
-                flash("Yüz tanıma işlemi başarısız oldu. Lütfen uygun bir fotoğraf yükleyin.", 'danger')
-            else:
-                # Kullanıcıyı seçmen olarak güncelle
-                face_recognition_entry = FaceRecognition(encoding=face_encoding, image_path=photo_path)
-                db.session.add(face_recognition_entry)
-                db.session.commit()
-
-                user.tc = tc
-                user.name = name
-                user.surname = surname
-                user.face_id = face_recognition_entry.id
-                db.session.commit()
-
-                flash('Seçmen hesabına geçiş başarılı!', 'success')
-                return redirect(url_for('accounts.user_info', user_id=user_id, _external=True))
-
-    # Standart kullanıcı formunu göster
+    # Seçmen bilgileri yoksa standart kullanıcı formunu göster
     return render_template(
         'accounts/user_info.html',
         user=user,
         email_form=email_form,
         password_form=password_form,
     )
-
 
 
 
@@ -187,7 +229,9 @@ def register():
 
         # Doğrulama
         errors = []
-
+        if User.query.filter_by(tc=tc).first():
+            flash("Bu TC kimlik numarası zaten kayıtlı. Lütfen giriş yapın veya farklı bir TC numarası kullanın.", "danger")
+            return render_template("accounts/register.html")
         if not email or not password or not confirm_password:
             errors.append("Email ve şifre alanları doldurulmalıdır.")
 
