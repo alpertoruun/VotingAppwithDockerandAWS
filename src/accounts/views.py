@@ -54,7 +54,50 @@ def user_info(user_id):
     password_form = PasswordChangeForm()
 
     if request.method == 'POST':
-        # Email değiştirme formu gönderildiğinde
+        if 'update_photo' in request.form:
+            face_photo = request.files.get('face_photo')
+            
+            if not face_photo:
+                flash('Lütfen bir fotoğraf seçin.', 'danger')
+                return redirect(url_for('accounts.user_info', user_id=user_id))
+
+            try:
+                # Fotoğrafı kaydet ve yüz encoding işlemini gerçekleştir
+                photo_path = save_photo(face_photo)
+                face_encoding = get_face_encoding(photo_path)
+
+                if face_encoding is None or len(face_encoding) == 0:
+                    flash("Yüz tanıma işlemi başarısız oldu. Lütfen uygun bir fotoğraf yükleyin.", 'danger')
+                    return redirect(url_for('accounts.user_info', user_id=user_id))
+
+                # Eski fotoğraf kaydını sil
+                old_face_recognition = FaceRecognition.query.get(user.face_id)
+                if old_face_recognition:
+                    try:
+                        os.remove(old_face_recognition.image_path)
+                    except:
+                        pass
+                    db.session.delete(old_face_recognition)
+
+                # Yeni fotoğraf kaydını oluştur
+                face_recognition_entry = FaceRecognition(encoding=face_encoding, image_path=photo_path)
+                db.session.add(face_recognition_entry)
+                db.session.commit()
+
+                # Kullanıcı bilgilerini güncelle
+                user.face_id = face_recognition_entry.id
+                if user.is_face_approved:  # Eğer daha önce onaylanmışsa
+                    user.is_face_approved = False  # onayı kaldır
+                db.session.commit()
+
+                flash('Fotoğrafınız başarıyla güncellendi. Lütfen yeni fotoğrafınızı doğrulayın.', 'success')
+
+            except Exception as e:
+                db.session.rollback()
+                flash('Fotoğraf güncelleme sırasında bir hata oluştu.', 'danger')
+            
+            return redirect(url_for('accounts.user_info', user_id=user_id))
+            
         if 'email' in request.form:
             if email_form.validate_on_submit():
                 try:

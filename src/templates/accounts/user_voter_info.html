@@ -15,11 +15,29 @@
                     <div class="text-center mb-4">
                         <div class="profile-photo-container mx-auto">
                             <img src="/{{ user.face_recognition.image_path }}" 
-                                 alt="Profil Fotoğrafı" 
-                                 class="rounded-circle profile-photo shadow">
+                                alt="Profil Fotoğrafı" 
+                                class="rounded-circle profile-photo shadow">
                         </div>
+                        <button type="button" 
+                                class="btn btn-outline-primary btn-sm mt-3" 
+                                onclick="document.getElementById('photoForm').style.display='block'">
+                            <i class="fas fa-camera me-2"></i>Fotoğrafı Düzenle
+                        </button>
                     </div>
 
+                    <!-- Fotoğraf Yükleme Formu (başlangıçta gizli) -->
+                    <div id="photoForm" style="display:none;" class="text-center mt-3">
+                        <form method="POST" enctype="multipart/form-data" class="d-inline-block">
+                            <div class="input-group">
+                                <input type="file" class="form-control" id="face_photo" name="face_photo" accept="image/*" required>
+                                <button type="submit" name="update_photo" class="btn btn-primary">Yükle</button>
+                                <button type="button" class="btn btn-secondary" 
+                                        onclick="document.getElementById('photoForm').style.display='none'">
+                                    İptal
+                                </button>
+                            </div>
+                        </form>
+                    </div>
                     <!-- Yüz Doğrulama Durumu -->
                     <div class="verification-status text-center mb-4">
                         <h5 class="fw-bold mb-3">Yüz Doğrulama Durumu</h5>
@@ -233,4 +251,5 @@
     }
 }
 </style>
+
 {% endblock %}
