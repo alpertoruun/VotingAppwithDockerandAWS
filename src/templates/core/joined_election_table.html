@@ -1,32 +1,65 @@
 <div class="table-responsive">
+    <style>
+        .table th {
+            position: relative;
+            padding-right: 25px !important;
+        }
+        
+        .sort-icons {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            line-height: 0.7;
+        }
+        
+        .sort-icons a {
+            text-decoration: none;
+            color: #6c757d;
+            font-size: 0.8rem;
+            padding: 0;
+        }
+        
+        .sort-icons a:hover {
+            color: #000;
+        }
+    </style>
+
     <table class="table table-bordered table-hover">
         <thead class="thead-dark">
             <tr>
-                <th>Oylama İsmi
+                <th>
+                    Oylama İsmi
                     <div class="sort-icons">
                         <a href="{{ url_for('core.joined_elections', sort_by='title', order='asc', page=pagination.page) }}">▲</a>
                         <a href="{{ url_for('core.joined_elections', sort_by='title', order='desc', page=pagination.page) }}">▼</a>
                     </div>
                 </th>
-                <th>Açıklama
+                <th>
+                    Açıklama
                     <div class="sort-icons">
                         <a href="{{ url_for('core.joined_elections', sort_by='description', order='asc', page=pagination.page) }}">▲</a>
                         <a href="{{ url_for('core.joined_elections', sort_by='description', order='desc', page=pagination.page) }}">▼</a>
                     </div>
                 </th>
-                <th>Oluşturulma Tarihi
+                <th>
+                    Oluşturulma Tarihi
                     <div class="sort-icons">
                         <a href="{{ url_for('core.joined_elections', sort_by='created_at', order='asc', page=pagination.page) }}">▲</a>
                         <a href="{{ url_for('core.joined_elections', sort_by='created_at', order='desc', page=pagination.page) }}">▼</a>
                     </div>
                 </th>
-                <th>Başlangıç Tarihi
+                <th>
+                    Başlangıç Tarihi
                     <div class="sort-icons">
                         <a href="{{ url_for('core.joined_elections', sort_by='start_date', order='asc', page=pagination.page) }}">▲</a>
                         <a href="{{ url_for('core.joined_elections', sort_by='start_date', order='desc', page=pagination.page) }}">▼</a>
                     </div>
                 </th>
-                <th>Bitiş Tarihi
+                <th>
+                    Bitiş Tarihi
                     <div class="sort-icons">
                         <a href="{{ url_for('core.joined_elections', sort_by='end_date', order='asc', page=pagination.page) }}">▲</a>
                         <a href="{{ url_for('core.joined_elections', sort_by='end_date', order='desc', page=pagination.page) }}">▼</a>
@@ -51,28 +84,3 @@
         </tbody>
     </table>
 </div>
-
-<!-- Sayfalama -->
-<nav aria-label="Sayfalama">
-    <ul class="pagination justify-content-center">
-        {% if pagination.has_prev %}
-        <li class="page-item">
-            <a class="page-link" href="{{ url_for('core.joined_elections', page=pagination.prev_num, sort_by=sort_by, order=order) }}">Önceki</a>
-        </li>
-        {% endif %}
-        
-        {% for page in pagination.iter_pages() %}
-            {% if page %}
-            <li class="page-item {{ 'active' if page == pagination.page else '' }}">
-                <a class="page-link" href="{{ url_for('core.joined_elections', page=page, sort_by=sort_by, order=order) }}">{{ page }}</a>
-            </li>
-            {% endif %}
-        {% endfor %}
-        
-        {% if pagination.has_next %}
-        <li class="page-item">
-            <a class="page-link" href="{{ url_for('core.joined_elections', page=pagination.next_num, sort_by=sort_by, order=order) }}">Sonraki</a>
-        </li>
-        {% endif %}
-    </ul>
-</nav>
