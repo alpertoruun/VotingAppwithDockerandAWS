@@ -1,15 +1,15 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_required, login_user, logout_user, current_user
-
+from src.utils.face_recognition import get_face_encoding, save_face_encoding, save_photo, check_face_exists
 from src.utils.email_utils import send_email, send_reset_email, send_update_email, send_verify_email
 from src.utils.password_token_utils import create_password_reset_entry, verify_reset_token
 from src.utils.email_validator import validate_email, EmailNotValidError
 from src.utils.update_email_token_utils import create_update_email_entry, verify_update_token
 from src.utils.verify_email_utils import create_email_verification_entry, verify_email_token
-from src.utils.face_recognition import get_face_encoding, save_face_encoding, save_photo
+import os
 from src.utils.encrypt_election_id import encrypt_id, decrypt_id
 
-
+import numpy as np
 
 
 
@@ -62,12 +62,24 @@ def user_info(user_id):
                 return redirect(url_for('accounts.user_info', user_id=user_id))
 
             try:
-                # Fotoğrafı kaydet ve yüz encoding işlemini gerçekleştir
                 photo_path = save_photo(face_photo)
                 face_encoding = get_face_encoding(photo_path)
 
-                if face_encoding is None or len(face_encoding) == 0:
-                    flash("Yüz tanıma işlemi başarısız oldu. Lütfen uygun bir fotoğraf yükleyin.", 'danger')
+                if face_encoding is None:
+                    try:
+                        os.remove(photo_path)
+                    except:
+                        pass
+                    flash("Yüz tanıma işlemi başarısız oldu.", 'danger')
+                    return redirect(url_for('accounts.user_info', user_id=user_id))
+
+                # Yüz benzerlik kontrolü - Burada int(user_id) kullanıyoruz
+                if check_face_exists(face_encoding, int(user_id)):
+                    try:
+                        os.remove(photo_path)
+                    except:
+                        pass
+                    flash("Bu yüz başka bir hesapta kayıtlı!", 'danger')
                     return redirect(url_for('accounts.user_info', user_id=user_id))
 
                 # Eski fotoğraf kaydını sil
@@ -93,7 +105,12 @@ def user_info(user_id):
                 flash('Fotoğrafınız başarıyla güncellendi. Lütfen yeni fotoğrafınızı doğrulayın.', 'success')
 
             except Exception as e:
+                print(f"HATA: {str(e)}")  # Debug için hata mesajını yazdır
                 db.session.rollback()
+                try:
+                    os.remove(photo_path)
+                except:
+                    pass
                 flash('Fotoğraf güncelleme sırasında bir hata oluştu.', 'danger')
             
             return redirect(url_for('accounts.user_info', user_id=user_id))
@@ -161,24 +178,43 @@ def user_info(user_id):
                     photo_path = save_photo(face_photo)
                     face_encoding = get_face_encoding(photo_path)
 
-                    if face_encoding is None or len(face_encoding) == 0:
+                    if face_encoding is None:
+                        try:
+                            os.remove(photo_path)
+                        except:
+                            pass
                         flash("Yüz tanıma işlemi başarısız oldu. Lütfen uygun bir fotoğraf yükleyin.", 'danger')
-                    else:
-                        # Kullanıcıyı seçmen olarak güncelle
-                        face_recognition_entry = FaceRecognition(encoding=face_encoding, image_path=photo_path)
-                        db.session.add(face_recognition_entry)
-                        db.session.commit()
-
-                        user.tc = tc
-                        user.name = name
-                        user.surname = surname
-                        user.face_id = face_recognition_entry.id
-                        db.session.commit()
-
-                        flash('Seçmen hesabına geçiş başarılı!', 'success')
                         return redirect(url_for('accounts.user_info', user_id=user_id))
+
+                    # Yüz benzerlik kontrolü
+                    if check_face_exists(face_encoding, user_id):
+                        try:
+                            os.remove(photo_path)
+                        except:
+                            pass
+                        flash("Bu yüz başka bir hesapta kayıtlı!", 'danger')
+                        return redirect(url_for('accounts.user_info', user_id=user_id))
+
+                    # Kullanıcıyı seçmen olarak güncelle
+                    face_recognition_entry = FaceRecognition(encoding=face_encoding, image_path=photo_path)
+                    db.session.add(face_recognition_entry)
+                    db.session.commit()
+
+                    user.tc = tc
+                    user.name = name
+                    user.surname = surname
+                    user.face_id = face_recognition_entry.id
+                    db.session.commit()
+
+                    flash('Seçmen hesabına geçiş başarılı!', 'success')
+                    return redirect(url_for('accounts.user_info', user_id=user_id))
+
                 except Exception as e:
                     db.session.rollback()
+                    try:
+                        os.remove(photo_path)  # Hata durumunda fotoğrafı sil
+                    except:
+                        pass
                     flash('Seçmen hesabına geçiş sırasında bir hata oluştu.', 'danger')
 
     # Eğer seçmen bilgileri mevcutsa doğrudan `user_voter_info.html`'i döndür
@@ -308,11 +344,23 @@ def register():
             face_encoding = get_face_encoding(photo_path)  # Encoding işlemini yap
 
             if face_encoding is None:
-                flash("Yüklenen fotoğrafta yüz algılanamadı.", "danger")
+                try:
+                    os.remove(photo_path)  # Başarısız fotoğrafı sil
+                except:
+                    pass
+                flash("Yüklenen fotoğrafta yüz algılanamadı veya birden fazla yüz tespit edildi.", "danger")
                 return render_template("accounts/register.html")
 
-            face_id = save_face_encoding(face_encoding, photo_path)  # Encoding'i kaydet
+            # Yüz benzerlik kontrolü ekliyoruz
+            if check_face_exists(face_encoding):
+                try:
+                    os.remove(photo_path)  # Başarısız fotoğrafı sil
+                except:
+                    pass
+                flash("Bu yüz başka bir hesapta zaten kayıtlı!", "danger")
+                return render_template("accounts/register.html")
 
+            face_id = save_face_encoding(face_encoding, photo_path)
         # Kullanıcı oluştur
         user = User(
             email=email,

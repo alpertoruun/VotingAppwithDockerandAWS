@@ -3,7 +3,7 @@ import numpy as np
 from src.accounts.models import db, FaceRecognition
 import os
 import uuid
-
+from src.accounts.models import db, FaceRecognition, User
 UPLOAD_FOLDER = "static/uploads"  # Fotoğraflar için hedef klasör
 
 def get_face_encoding(image_path):
@@ -14,7 +14,28 @@ def get_face_encoding(image_path):
     if len(face_encodings) == 0:
         print("Yüz bulunamadı!")
         return None
+    elif len(face_encodings) > 1:
+        print("Birden fazla yüz tespit edildi!")
+        return None
     return face_encodings[0]
+
+def check_face_exists(face_encoding, user_id=None):
+    all_faces = FaceRecognition.query.all()
+    
+    for face in all_faces:
+        # User tablosundan ilgili kullanıcıyı bul
+        user = User.query.filter_by(face_id=face.id).first()
+        
+        if user_id and user and user.id == user_id:
+            continue
+            
+        stored_encoding = np.frombuffer(face.encoding, dtype=np.float64)
+        distance = face_recognition.face_distance([stored_encoding], face_encoding)[0]
+        
+        if distance < 0.5:
+            return True
+            
+    return False
 
 def save_face_encoding(face_encoding, photo_path):
     """Encoding verisini yüz tanıma modeline kaydeder ve face_id döndürür."""
