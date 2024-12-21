@@ -20,8 +20,7 @@ def get_face_encoding(image_path):
     return face_encodings[0]
 
 def check_face_exists(face_encoding, user_id=None):
-    all_faces = FaceRecognition.query.all()
-    
+    all_faces = FaceRecognition.query.join(User, FaceRecognition.id == User.face_id).filter(User.is_face_approved == True).all()    
     for face in all_faces:
         # User tablosundan ilgili kullanıcıyı bul
         user = User.query.filter_by(face_id=face.id).first()
