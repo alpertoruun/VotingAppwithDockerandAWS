@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 from flask_login import UserMixin
 
@@ -60,6 +60,39 @@ class Election(db.Model):
     participation_rate = db.Column(db.Float, default=0.0, nullable=False)  
 
 
+class TemporaryBlockedUser(db.Model):
+    __tablename__ = 'temporary_blocked_user'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    end_date = db.Column(db.DateTime, nullable=False)
+
+    # Relationship with User model
+    user = db.relationship('User', backref=db.backref('temporary_blocks', lazy=True))
+
+    def __init__(self, user_id):
+        self.user_id = user_id
+        self.end_date = datetime.now(timezone.utc) + timedelta(minutes=30)
+
+    def __repr__(self):
+        return f'<TemporaryBlockedUser user_id={self.user_id} end_date={self.end_date}>'
+
+    @staticmethod
+    def is_user_blocked(user_id):
+        current_time = datetime.now(timezone.utc)
+        block = TemporaryBlockedUser.query.filter(
+        TemporaryBlockedUser.user_id == user_id,
+        TemporaryBlockedUser.end_date > current_time
+        ).first()
+        if block:
+            if block.end_date.tzinfo is None:
+                block_end_date = block.end_date.replace(tzinfo=timezone.utc)
+            else:
+                block_end_date = block.end_date
+                
+            current_time = datetime.now(timezone.utc)
+            return block_end_date > current_time
+        return False
 
 class Option(db.Model):
     id = db.Column(db.Integer, primary_key=True)

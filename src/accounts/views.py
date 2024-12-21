@@ -308,9 +308,10 @@ def register():
 
         # Doğrulama
         errors = []
-        if User.query.filter_by(tc=tc).first():
+        if tc and User.query.filter(User.tc == tc).first():            
             flash("Bu TC kimlik numarası zaten kayıtlı. Lütfen giriş yapın veya farklı bir TC numarası kullanın.", "danger")
             return render_template("accounts/register.html")
+        
         if not email or not password or not confirm_password:
             errors.append("Email ve şifre alanları doldurulmalıdır.")
 

@@ -15,22 +15,22 @@ services:
   init:
     image: initdb
     environment:
-      - DATABASE_URL=postgresql://user:password@db:5432/votingapp_db
+      - DATABASE_URL=postgresql://user:password@db:5432/votingapp
     depends_on:
       - db
     networks:
       - votingapp_network
-    restart: "no"  # Migration işlemi tamamlandığında durur
+    restart: "no"  
 
   votingapp:
     image: votingapp
     environment:
-      - DATABASE_URL=postgresql://user:password@db:5432/votingapp_db
+      - DATABASE_URL=postgresql://user:password@db:5432/votingapp
     depends_on:
       - db
-      - init  # Init işlemi tamamlandıktan sonra çalışır
+      - init  
     ports:
-      - "5000:5000"  # Uygulamaya dışarıdan erişim için port açılıyor
+      - "5000:5000"
     networks:
       - votingapp_network
 

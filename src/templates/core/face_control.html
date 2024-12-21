@@ -58,6 +58,7 @@
    lastEyeState: 'open',
    potentialBlink: false,
    redirectUrl: null,
+   failedAttempts: 0,
    faceVerified: false,
    EYE_AR_THRESH: 0.25,
    EYE_AR_CONSEC_FRAMES: 1,
@@ -184,20 +185,19 @@
        })
        .then(response => response.json())
        .then(data => {
-           log('Sunucu yanıtı', data);
-           if (data.success === "true") {
-               state.matches++;
-               updateProgress();
-               log('Eşleşme başarılı', {matches: state.matches});
-           }
-       })
-       .catch(error => {
-           log('Görüntü işleme hatası', error);
-           updateStatus('Görüntü işleme hatası!', 'warning');
-       });
-   }, 'image/jpeg', 0.95);
- }
-
+            log('Sunucu yanıtı', data);
+            if (data.success === "true") {
+                state.matches++;
+                updateProgress();
+                log('Eşleşme başarılı', {matches: state.matches});
+            }
+        })
+        .catch(error => {
+            log('Görüntü işleme hatası', error);
+            updateStatus('Görüntü işleme hatası!', 'warning');
+        });
+   }, 'image/jpeg', 0.95); // Bu parantez eksikti
+}
  function onResults(results) {
    log('FaceMesh sonuçları alındı');
    const ctx = elements.outputCanvas.getContext('2d');
@@ -282,10 +282,35 @@
        startBlinkDetection();
    } else {
        log('Yüz doğrulama başarısız');
-       updateStatus('Yüz doğrulama başarısız. Tekrar deneniyor...', 'warning');
-       setTimeout(startCapturing, 1000);
+       state.failedAttempts = (state.failedAttempts || 0) + 1;
+       
+       if (state.failedAttempts >= 5) {
+           // 5 başarısız denemede blokla
+           fetch('/block_user', {
+               method: 'POST',
+               headers: {
+                   'Content-Type': 'application/json',
+                   'X-Requested-With': 'XMLHttpRequest'
+               },
+               body: JSON.stringify({
+                   token: '{{ token }}'
+               })
+           })
+           .then(response => response.json())
+           .then(data => {
+               if (data.blocked) {
+                   updateStatus('Çok fazla başarısız deneme. 30 dakika sonra tekrar deneyin.', 'danger');
+                   setTimeout(() => {
+                       window.location.href = '/create_election';
+                   }, 2000);
+               }
+           });
+       } else {
+           updateStatus('Yüz doğrulama başarısız. Tekrar deneniyor...', 'warning');
+           setTimeout(startCapturing, 1000);
+       }
    }
- }
+}
 
  function startBlinkDetection() {
    log('Göz kırpma testi başlatılıyor');

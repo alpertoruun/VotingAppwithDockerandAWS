@@ -8,7 +8,7 @@ import time
 import os
 from flask import Blueprint, render_template, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
-from src.accounts.models import db, Election, Option, Votes, VoteToken, OptionCount, FaceRecognition, User
+from src.accounts.models import db, Election, Option, Votes, VoteToken, OptionCount, FaceRecognition, User, TemporaryBlockedUser
 from src.utils.email_utils import send_vote_link
 from src.utils.email_validator import validate_email_address, EmailNotValidError
 from src.utils.vote_token_utils import create_vote_token_entry
@@ -180,6 +180,10 @@ def face_control(token):
         flash("Geçersiz veya kullanılmış token.", "danger")
         return redirect(url_for("core.create_election"))
 
+    if TemporaryBlockedUser.is_user_blocked(vote_token.user_id):
+        flash("Çok fazla başarısız deneme yaptınız. Lütfen 30 dakika sonra tekrar deneyin.", "danger")
+        return redirect(url_for("core.create_election"))
+
     # Seçim tarihlerini kontrol et
     election = Election.query.get(vote_token.election_id)
 
@@ -258,6 +262,22 @@ def face_control(token):
             return jsonify({"success": "false", "message": "Yüz doğrulama başarısız!"}), 400
 
     return render_template('core/face_control.html', token=token)
+
+@core_bp.route('/block_user', methods=['POST'])
+def block_user():
+    data = request.get_json()
+    token = data.get('token')
+    
+    vote_token = VoteToken.query.filter_by(token=token, used=False).first()
+    if not vote_token:
+        return jsonify({"blocked": False}), 400
+
+    # Kullanıcıyı bloke et
+    block = TemporaryBlockedUser(user_id=vote_token.user_id)
+    db.session.add(block)
+    db.session.commit()
+
+    return jsonify({"blocked": True}), 200
 
 @core_bp.route('/blink_verification', methods=['POST'])
 def blink_verification():
