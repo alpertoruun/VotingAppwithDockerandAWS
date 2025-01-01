@@ -7,7 +7,9 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_mail import Mail
 from flask_wtf import CSRFProtect
 from cryptography.fernet import Fernet
-from flask_apscheduler import APScheduler 
+from flask_apscheduler import APScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
+import logging
 from src.utils.encrypt_election_id import encrypt_id, decrypt_id
 
 app = Flask(__name__, static_folder="static")
@@ -45,14 +47,21 @@ login_manager.login_view = "accounts.login"
 login_manager.login_message_category = "danger"
 
 # Zamanlanmış Görev için APScheduler başlatıldı
-scheduler = APScheduler()
+logging.basicConfig()
+logging.getLogger('apscheduler').setLevel(logging.DEBUG)
 
-# Zamanlanmış görev: 60 saniyede bir çalışacak
+scheduler = APScheduler(scheduler=BackgroundScheduler(daemon=True))
+
 @scheduler.task('interval', id='count_votes_job', seconds=60)
 def scheduled_count_votes():
-    with scheduler.app.app_context():
-        from src.utils.count_votes_utils import count_votes
-        count_votes()
+    with app.app_context():
+        try:
+            from src.utils.count_votes_utils import count_votes
+            app.logger.info("Counting votes started...")
+            count_votes()
+            app.logger.info("Counting votes completed successfully")
+        except Exception as e:
+            app.logger.error(f"Error in count_votes: {str(e)}")
 
 scheduler.init_app(app)
 scheduler.start()

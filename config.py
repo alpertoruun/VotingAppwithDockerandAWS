@@ -17,6 +17,16 @@ class Config(object):
     DEBUG_TB_ENABLED = False
     DEBUG_TB_INTERCEPT_REDIRECTS = False
     FERNET_KEY = config("FERNET_KEY", default="guess-me")
+    SCHEDULER_API_ENABLED = True
+    SCHEDULER_TIMEZONE = "UTC"
+    SCHEDULER_JOB_DEFAULTS = {
+        'coalesce': False,
+        'max_instances': 1,
+        'misfire_grace_time': 300
+    }
+    SERVER_NAME = config('SERVER_NAME', default='localhost:5000')
+    PREFERRED_URL_SCHEME = config('PREFERRED_URL_SCHEME', default='http')
+    APPLICATION_ROOT = '/'
 
 
 class DevelopmentConfig(Config):
