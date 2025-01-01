@@ -330,8 +330,8 @@ def register():
         if len(password) < 6 or len(password) > 25:
             errors.append("Şifre 6 ile 25 karakter arasında olmalıdır.")
 
-        if len(tc or "") != 11 and is_voter:
-            errors.append("TC kimlik numarası 11 haneli olmalıdır.")
+        if (len(tc or "") != 11 or not tc.isdigit() or (sum(int(d) for d in tc[:10]) % 10 != int(tc[10]))) and is_voter:
+            errors.append("TC kimlik numarası geçersizdir.")
 
         if errors:
             for error in errors:

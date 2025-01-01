@@ -14,19 +14,19 @@
                         <a href="{{ url_for('core.my_elections', sort_by='description', order='desc', page=pagination.page) }}">▼</a>
                     </div>
                 </th>
-                <th>Oluşturulma Tarihi(dd/mm/yyyy)
+                <th>Oluşturulma Tarihi
                     <div class="sort-icons">
                         <a href="{{ url_for('core.my_elections', sort_by='created_at', order='asc', page=pagination.page) }}">▲</a>
                         <a href="{{ url_for('core.my_elections', sort_by='created_at', order='desc', page=pagination.page) }}">▼</a>
                     </div>
                 </th>
-                <th>Başlangıç Tarihi(dd/mm/yyyy)
+                <th>Başlangıç Tarihi
                     <div class="sort-icons">
                         <a href="{{ url_for('core.my_elections', sort_by='start_date', order='asc', page=pagination.page) }}">▲</a>
                         <a href="{{ url_for('core.my_elections', sort_by='start_date', order='desc', page=pagination.page) }}">▼</a>
                     </div>
                 </th>
-                <th>Bitiş Tarihi(dd/mm/yyyy)
+                <th>Bitiş Tarihi
                     <div class="sort-icons">
                         <a href="{{ url_for('core.my_elections', sort_by='end_date', order='asc', page=pagination.page) }}">▲</a>
                         <a href="{{ url_for('core.my_elections', sort_by='end_date', order='desc', page=pagination.page) }}">▼</a>
