@@ -1,3 +1,5 @@
+setuptools==75.3.0
+wheel==0.44.0
 alembic==1.8.1
 APScheduler==3.10.4
 autopep8==1.7.0
@@ -41,7 +43,6 @@ pycparser==2.22
 python-dateutil==2.9.0.post0
 python-decouple==3.6
 pytz==2024.2
-setuptools==75.3.0
 six==1.16.0
 SQLAlchemy==1.4.40
 toml==0.10.2
@@ -49,7 +50,6 @@ tomli==2.0.1
 typing_extensions==4.4.0
 tzlocal==5.2
 Werkzeug==2.2.2
-wheel==0.44.0
 WTForms==3.0.1
 zipp==3.8.1
 python-dotenv==1.0.1
