@@ -53,4 +53,3 @@ WTForms==3.0.1
 zipp==3.8.1
 python-dotenv==1.0.1
 gunicorn
-dlib==19.24.6
