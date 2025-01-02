@@ -1,35 +1,37 @@
-# Temel Python imajını kullanıyoruz
-FROM python:3.12-slim
+FROM continuumio/miniconda3
 
-# Gerekli bağımlılıkları kuruyoruz
-RUN apt-get update && apt-get install -y \
-    git \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    build-essential \
-    cmake \
-    ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
-
-# Çalışma dizinini ayarlıyoruz
 WORKDIR /opt/votingapp
 
-ENV GITHUB_TOKEN=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
-RUN echo "cloneing" && git clone https://$GITHUB_TOKEN@github.com/alpertoruun/VotingAppwithDockerandAWS.git .
+# Sistem paketleri
+RUN apt-get update && apt-get install -y \
+    git \
+    ffmpeg \    
+    cmake \
+    build-essential \
+    && apt-get clean
 
-RUN pip install --no-cache-dir -r requirements.txt
 
-ENV PYTHONUNBUFFERED=1
-ENV DATABASE_URL=postgresql://postgres:mypas!word@voting-app.cn0segwuk4m7.eu-central-1.rds.amazonaws.com:5432/postgres
+ARG GITHUB_TOKEN
+RUN echo ""
+RUN git clone https://${GITHUB_TOKEN}@github.com/alpertoruun/VotingAppwithDockerandAWS.git .
+    
+# Conda environment
+COPY environment.yml .
+RUN conda env create -f environment.yml
 
-ENV SECRET_KEY=928ee491f7ab3d6694821227fba3c33b
-ENV DEBUG=False
-ENV APP_SETTINGS=config.DevelopmentConfig
-ENV FLASK_APP=src
-ENV FLASK_DEBUG=0
-ENV FERNET_KEY="H_KAHfq4pkq6AnlNwmzVHs2RrSzi9jGykPp8EkGc4BA="
-# Load balancer endpoint'ini kullan
-ENV PREFERRED_URL_SCHEME=http
+# Aktivasyon için shell init
+SHELL ["conda", "run", "-n", "myenv", "/bin/bash", "-c"]
 
-CMD ["gunicorn", "--workers=1", "--threads=4", "--timeout", "120", "--worker-class=gthread", "--bind", "0.0.0.0:5000", "--log-level=debug", "--access-logfile", "-", "--error-logfile", "-", "src:app"]
+# Ortam değişkenleri
+ENV PYTHONUNBUFFERED=1 \
+    DATABASE_URL=postgresql://postgres:mypas!word@database-1.cvc6y2g2aoqc.eu-west-1.rds.amazonaws.com:5432/postgres \
+    SECRET_KEY=928ee491f7ab3d6694821227fba3c33b \
+    DEBUG=False \
+    APP_SETTINGS=config.DevelopmentConfig \
+    FLASK_APP=src \
+    FLASK_DEBUG=0 \
+    FERNET_KEY="H_KAHfq4pkq6AnlNwmzVHs2RrSzi9jGykPp8EkGc4BA=" \
+    PREFERRED_URL_SCHEME=http
+
 EXPOSE 5000
+CMD ["conda", "run", "-n", "myenv", "gunicorn", "--workers=1", "--threads=4", "--timeout", "120", "--worker-class=gthread", "--bind", "0.0.0.0:5000", "--log-level=debug", "--access-logfile", "-", "--error-logfile", "-", "src:app"]
