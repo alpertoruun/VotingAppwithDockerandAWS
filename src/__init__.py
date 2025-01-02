@@ -18,6 +18,7 @@ app.config.from_object(config("APP_SETTINGS"))
 mail = Mail(app)
 
 app.config['PREFERRED_URL_SCHEME'] = config('PREFERRED_URL_SCHEME')
+app.config['SERVER_NAME'] = config('SERVER_NAME')
 
 login_manager = LoginManager()
 login_manager.init_app(app)
