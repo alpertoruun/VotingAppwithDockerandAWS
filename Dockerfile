@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /opt/votingapp
 
 ENV GITHUB_TOKEN=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
-RUN echo "cloning" && git clone https://$GITHUB_TOKEN@github.com/alpertoruun/VotingAppwithDockerandAWS.git .
+RUN echo "cloneing" && git clone https://$GITHUB_TOKEN@github.com/alpertoruun/VotingAppwithDockerandAWS.git .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -29,8 +29,7 @@ ENV FLASK_APP=src
 ENV FLASK_DEBUG=0
 ENV FERNET_KEY="H_KAHfq4pkq6AnlNwmzVHs2RrSzi9jGykPp8EkGc4BA="
 # Load balancer endpoint'ini kullan
-ENV SERVER_NAME=voting-app-alb-1059205030.eu-central-1.elb.amazonaws.com
 ENV PREFERRED_URL_SCHEME=http
 
-CMD ["gunicorn", "--workers=1", "--threads=4", "--timeout", "120", "--worker-class=gthread", "--bind", "0.0.0.0:5000", "--log-level=info", "src:app"]
+CMD ["gunicorn", "--workers=1", "--threads=4", "--timeout", "120", "--worker-class=gthread", "--bind", "0.0.0.0:5000", "--log-level=debug", "--access-logfile", "-", "--error-logfile", "-", "src:app"]
 EXPOSE 5000
