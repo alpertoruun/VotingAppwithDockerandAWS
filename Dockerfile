@@ -31,7 +31,7 @@ ENV PYTHONUNBUFFERED=1 \
     FLASK_APP=src \
     FLASK_DEBUG=0 \
     FERNET_KEY="H_KAHfq4pkq6AnlNwmzVHs2RrSzi9jGykPp8EkGc4BA=" \
-    PREFERRED_URL_SCHEME=http
+    PREFERRED_URL_SCHEME=http \
     SERVER_NAME="voting-app-lb-28816073.eu-west-1.elb.amazonaws.com"
 
 EXPOSE 5000
