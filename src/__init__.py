@@ -50,8 +50,21 @@ login_manager.login_message_category = "danger"
 # Zamanlanmış Görev için APScheduler başlatıldı
 logging.basicConfig()
 logging.getLogger('apscheduler').setLevel(logging.DEBUG)
+file_handler = logging.FileHandler('/opt/votingapp/logs/gunicorn.log')
+file_handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+logging.getLogger().addHandler(file_handler)
+app.logger.addHandler(file_handler)
+
+scheduler_logger = logging.getLogger('apscheduler')
+scheduler_logger.setLevel(logging.DEBUG)
+scheduler_logger.addHandler(file_handler)
 
 scheduler = APScheduler(scheduler=BackgroundScheduler(daemon=True))
+
+scheduler.add_jobstore('memory')
+scheduler_logger.info("Scheduler initialized")
 
 @scheduler.task('interval', id='count_votes_job', seconds=60)
 def scheduled_count_votes():
