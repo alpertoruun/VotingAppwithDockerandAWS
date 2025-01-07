@@ -38,6 +38,6 @@ class DevelopmentConfig(Config):
     MAIL_PORT = 587
     MAIL_USE_TLS = True
     MAIL_USERNAME = 'alpertorun4455@gmail.com'
-    MAIL_PASSWORD = 'weew audi svvu mbio'
+    MAIL_PASSWORD = 'ydpj xeht iwrr raip'
 
 
