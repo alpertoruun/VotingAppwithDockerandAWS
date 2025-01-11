@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean
 
 ARG GITHUB_TOKEN
-RUN echo "clon"
+RUN echo "cloning"
 RUN git clone https://${GITHUB_TOKEN}@github.com/alpertoruun/VotingAppwithDockerandAWS.git .
     
 # Conda environment
