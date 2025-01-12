@@ -171,9 +171,6 @@ def election_results(encrypted_election_id):
 
 
 from flask import jsonify, request
-
-
-
 @core_bp.route('/face_control/<token>', methods=['GET', 'POST'])
 @login_required
 def face_control(token):

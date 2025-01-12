@@ -24,15 +24,15 @@ SHELL ["conda", "run", "-n", "myenv", "/bin/bash", "-c"]
 
 # Ortam değişkenleri
 ENV PYTHONUNBUFFERED=1 \
-    DATABASE_URL=postgresql://postgres:123@localhost/votingdb \
+    DATABASE_URL=postgresql://postgres:mypassword1.@voting-app.cvc6y2g2aoqc.eu-west-1.rds.amazonaws.com:5432/votingdb \
     SECRET_KEY=928ee491f7ab3d6694821227fba3c33b \
-    DEBUG=True \
+    DEBUG=False \
     APP_SETTINGS=config.DevelopmentConfig \
     FLASK_APP=src \
-    FLASK_DEBUG=1 \
+    FLASK_DEBUG=0 \
     FERNET_KEY="H_KAHfq4pkq6AnlNwmzVHs2RrSzi9jGykPp8EkGc4BA=" \
     PREFERRED_URL_SCHEME=http \
-    SERVER_NAME="localhost:5000"
+    SERVER_NAME="voting-app-1978515542.eu-west-1.elb.amazonaws.com:5000"
 
 RUN mkdir -p /opt/votingapp/logs
 
