@@ -32,7 +32,7 @@ ENV PYTHONUNBUFFERED=1 \
     FLASK_DEBUG=0 \
     FERNET_KEY="H_KAHfq4pkq6AnlNwmzVHs2RrSzi9jGykPp8EkGc4BA=" \
     PREFERRED_URL_SCHEME=http \
-    SERVER_NAME="voting-app-1978515542.eu-west-1.elb.amazonaws.com:5000"
+    SERVER_NAME="voting-app-1978515542.eu-west-1.elb.amazonaws.com"
 
 RUN mkdir -p /opt/votingapp/logs
 
