@@ -16,6 +16,7 @@ from src.utils.encrypt_election_id import encrypt_id, decrypt_id
 from src.utils.face_recognition import get_face_encoding, save_face_encoding, save_photo
 import numpy as np
 import logging
+import socket
 
 logging.basicConfig(
     filename='app.log', 
@@ -621,6 +622,15 @@ def get_user_info():
         'surname': user.surname,
         'email': user.email
     })
+
+@core_bp.route('/health', methods=['GET'])
+def health_check():
+    hostname = socket.gethostname()
+    ip_address = socket.gethostbyname(hostname)
+    
+    return jsonify({
+        'ip': ip_address
+    }), 200
 
 
 @core_bp.route('/joined_elections', methods=['GET'])
