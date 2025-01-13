@@ -16,6 +16,7 @@ from src.utils.encrypt_election_id import encrypt_id, decrypt_id
 from src.utils.face_recognition import get_face_encoding, save_face_encoding, save_photo
 import numpy as np
 import logging
+import socket
 
 logging.basicConfig(
     filename='app.log', 
@@ -171,14 +172,18 @@ def election_results(encrypted_election_id):
 
 
 from flask import jsonify, request
-
 @core_bp.route('/face_control/<token>', methods=['GET', 'POST'])
+@login_required
 def face_control(token):
     # Tokenin geçerliliğini kontrol et
     vote_token = VoteToken.query.filter_by(token=token, used=False).first()
     if not vote_token:
         flash("Geçersiz veya kullanılmış token.", "danger")
         return redirect(url_for("core.create_election"))
+
+    if current_user.id != int(vote_token.user_id):
+        flash('Bu sayfayı görme yetkiniz yok.', 'danger')
+        return render_template('errors/404.html')
 
     if TemporaryBlockedUser.is_user_blocked(vote_token.user_id):
         flash("Çok fazla başarısız deneme yaptınız. Lütfen 30 dakika sonra tekrar deneyin.", "danger")
@@ -617,6 +622,15 @@ def get_user_info():
         'surname': user.surname,
         'email': user.email
     })
+
+@core_bp.route('/health', methods=['GET'])
+def health_check():
+    hostname = socket.gethostname()
+    ip_address = socket.gethostbyname(hostname)
+    
+    return jsonify({
+        'ip': ip_address
+    }), 200
 
 
 @core_bp.route('/joined_elections', methods=['GET'])

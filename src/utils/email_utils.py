@@ -63,33 +63,52 @@ def send_verify_email(user, token):
 
 # Seçim sonuçlarını içeren e-posta
 def send_results_email(election):
-    with current_app.app_context():  # Bu satırı ekleyin
+    try:
         app = current_app._get_current_object()
         mail = app.extensions.get('mail')
         votetokens = VoteToken.query.filter_by(election_id=election.id).all()
-
+        
+        threads = []  # Thread'leri takip etmek için liste
+        
         for token in votetokens:
             voter = User.query.get(token.user_id)
             if voter:
                 try:
                     encrypted_election_id = encrypt_id(token.election_id)
-                    results_url = url_for('core.election_results', encrypted_election_id=encrypted_election_id, _external=True)
+                    results_url = url_for('core.election_results', 
+                                        encrypted_election_id=encrypted_election_id, 
+                                        _external=True)
 
                     msg = Message(
                         f"{election.title} Sonuçları",
                         sender=app.config['MAIL_USERNAME'],
                         recipients=[voter.email]
                     )
-                    msg.body = f"Merhaba {voter.name.capitalize()} {voter.surname.capitalize()},\n\n" \
-                               f"{election.title} seçim sonuçları açıklandı. Aşağıdaki linke tıklayarak sonuçları görüntüleyebilirsiniz:\n{results_url}\n\n" \
-                               "İyi günler dileriz!"
+                    msg.body = (f"Merhaba {voter.name.capitalize()} {voter.surname.capitalize()},\n\n"
+                               f"{election.title} seçim sonuçları açıklandı. "
+                               f"Aşağıdaki linke tıklayarak sonuçları görüntüleyebilirsiniz:"
+                               f"\n{results_url}\n\n"
+                               "İyi günler dileriz!")
                     
+                    # Thread oluştur ve listeye ekle
                     thread = Thread(target=send_async_email, args=(app, msg))
                     thread.daemon = True
+                    threads.append(thread)
                     thread.start()
 
                 except Exception as e:
-                    logging.error(f"Sonuç e-postası {voter.email} adresine gönderilemedi: {str(e)}")
+                    logging.error(f"Mail hazırlama hatası - {voter.email}: {str(e)}")
+        
+        # Tüm thread'lerin tamamlanmasını bekle
+        for thread in threads:
+            thread.join(timeout=30)  # maksimum 30 saniye bekle
+            
+        logging.info(f"Tüm sonuç mailleri gönderildi - Seçim ID: {election.id}")
+        return True
+
+    except Exception as e:
+        logging.error(f"Genel mail gönderim hatası - Seçim ID {election.id}: {str(e)}")
+        return False
 
 
 # Asenkron e-posta gönderme işlemi
