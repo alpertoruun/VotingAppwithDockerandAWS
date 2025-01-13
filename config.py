@@ -17,10 +17,10 @@ class Config(object):
     DEBUG_TB_ENABLED = False
     DEBUG_TB_INTERCEPT_REDIRECTS = False
     FERNET_KEY = config("FERNET_KEY", default="guess-me")
-    
+
 class DevelopmentConfig(Config):
-    DEVELOPMENT = True
-    DEBUG = True
+    DEVELOPMENT = False
+    DEBUG = False
     WTF_CSRF_ENABLED = False
     DEBUG_TB_ENABLED = True
     MAIL_SERVER = 'smtp.gmail.com'
