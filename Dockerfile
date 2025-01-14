@@ -43,5 +43,8 @@ ENV FLASK_DEBUG=0
 ENV FERNET_KEY="H_KAHfq4pkq6AnlNwmzVHs2RrSzi9jGykPp8EkGc4BA="
 ENV PREFERRED_URL_SCHEME=http
 
+RUN mkdir -p /opt/votingapp/static/uploads && \
+    chmod 777 /opt/votingapp/static/uploads
+
 EXPOSE 5000
 CMD ["/opt/votingapp/start.sh"]
