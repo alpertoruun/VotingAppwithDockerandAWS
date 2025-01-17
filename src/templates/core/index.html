@@ -230,6 +230,15 @@
 
                         <!-- Seçmen Bilgileri -->
                         <h3 class="text-left">Seçmen Bilgileri</h3>
+                        <div class="mb-3">
+                            <input type="file" class="d-none" id="csvFileInput" accept=".csv">
+                            <button type="button" class="btn btn-outline-primary me-2" id="uploadCsvBtn">
+                                TC'leri CSV'den Yükle
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="fetchAllUsersBtn" style="display: none;">
+                                Tüm Kullanıcıları Getir
+                            </button>
+                        </div>
                         <div id="votersContainer">
                             <!-- Seçmenler buraya dinamik olarak eklenecek -->
                         </div>
@@ -253,6 +262,63 @@ document.addEventListener('DOMContentLoaded', function() {
         addOption();
         addVoter();
     }
+
+    document.getElementById('uploadCsvBtn').addEventListener('click', function() {
+    document.getElementById('csvFileInput').click();
+});
+
+document.getElementById('csvFileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result;
+            const rows = text.split('\n').map(row => row.trim()).filter(row => row);
+
+            // Mevcut seçmen sayısını al
+            const currentVoterCount = document.querySelectorAll('.voter-row').length;
+            
+            // CSV'deki her TC için
+            rows.forEach((tc, index) => {
+                tc = tc.replace(/[^0-9]/g, ''); // Sadece rakamları al
+                
+                // TC doğrulama
+                if (tc.length !== 11) {
+                    alert(`Geçersiz TC formatı: ${tc}`);
+                    return;
+                }
+                
+                // Eğer mevcut alan varsa onu kullan, yoksa yeni alan ekle
+                if (index < currentVoterCount) {
+                    const voterRow = document.querySelectorAll('.voter-row')[index];
+                    const tcInput = voterRow.querySelector('.voter-tc');
+                    tcInput.value = tc;
+                } else {
+                    // Yeni seçmen alanı ekle
+                    addVoter();
+                    const newVoterRow = document.querySelectorAll('.voter-row')[index];
+                    const tcInput = newVoterRow.querySelector('.voter-tc');
+                    tcInput.value = tc;
+                }
+            });
+
+            // "Tüm Kullanıcıları Getir" butonunu göster
+            document.getElementById('fetchAllUsersBtn').style.display = 'inline-block';
+        };
+        reader.readAsText(file);
+    }
+});
+
+// Tüm kullanıcıları getirme fonksiyonu
+document.getElementById('fetchAllUsersBtn').addEventListener('click', function() {
+    const voterRows = document.querySelectorAll('.voter-row');
+    voterRows.forEach(row => {
+        const tcInput = row.querySelector('.voter-tc');
+        if (tcInput.value.length === 11) {
+            row.querySelector('.fetchUserInfo').click();
+        }
+    });
+});
 
     // Tarih işlevselliği
     var startDateElement = document.getElementById('startDate');
