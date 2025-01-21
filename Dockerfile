@@ -32,7 +32,7 @@ RUN crontab /etc/cron.d/vote-counter
 RUN chmod +x /opt/votingapp/cron_wrapper.sh
 RUN chmod +x /opt/votingapp/start.sh
 
-ENV DATABASE_URL="postgresql://postgres:mypassword1.@votingdb.cvc6y2g2aoqc.eu-west-1.rds.amazonaws.com:5432/postgres"
+ENV DATABASE_URL="xxxxxx"
 ENV SECRET_KEY=928ee491f7ab3d6694821227fba3c33b
 ENV DEBUG=False
 ENV APP_SETTINGS=config.DevelopmentConfig
