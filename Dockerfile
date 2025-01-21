@@ -2,19 +2,16 @@ FROM continuumio/miniconda3
 
 WORKDIR /opt/votingapp
 
-# Gerekli bağımlılıkları kuruyoruz (cron ekledik)
 RUN apt-get update && apt-get install -y \
     git \
     ffmpeg \    
     cmake \
-    cron \
     build-essential \
     cmake \
     ffmpeg \
     cron \
     && rm -rf /var/lib/apt/lists/*
 
-# Çalışma dizinini ayarlıyoruz
 WORKDIR /opt/votingapp
 
 ENV GITHUB_TOKEN="xxxxxxxx"
@@ -22,7 +19,6 @@ RUN echo "cloning" && git clone https://$GITHUB_TOKEN@github.com/alpertoruun/Vot
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Cron için gerekli dizin ve log dosyaları
 RUN mkdir -p /opt/votingapp/logs
 RUN touch /var/log/cron.log
 
