@@ -17,8 +17,8 @@ RUN apt-get update && apt-get install -y \
 # Çalışma dizinini ayarlıyoruz
 WORKDIR /opt/votingapp
 
-ENV GITHUB_TOKEN=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
-RUN echo "cloning" && git clone -b comeBack https://$GITHUB_TOKEN@github.com/alpertoruun/VotingAppwithDockerandAWS.git .
+ENV GITHUB_TOKEN="xxxxxxxx"
+RUN echo "cloning" && git clone https://$GITHUB_TOKEN@github.com/alpertoruun/VotingAppwithDockerandAWS.git .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
