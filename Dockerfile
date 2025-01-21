@@ -2,53 +2,51 @@ FROM continuumio/miniconda3
 
 WORKDIR /opt/votingapp
 
-# Sistem paketleri
+# Gerekli bağımlılıkları kuruyoruz (cron ekledik)
 RUN apt-get update && apt-get install -y \
     git \
     ffmpeg \    
     cmake \
     cron \
     build-essential \
-    && apt-get clean
+    cmake \
+    ffmpeg \
+    cron \
+    && rm -rf /var/lib/apt/lists/*
 
-ARG GITHUB_TOKEN
-RUN echo "cloning"
-RUN git clone https://${GITHUB_TOKEN}@github.com/alpertoruun/VotingAppwithDockerandAWS.git .
-    
-# Conda environment
-COPY environment.yml .
-RUN conda env create -f environment.yml
+# Çalışma dizinini ayarlıyoruz
+WORKDIR /opt/votingapp
 
-# Aktivasyon için shell init
-SHELL ["conda", "run", "-n", "myenv", "/bin/bash", "-c"]
+ENV GITHUB_TOKEN=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
+RUN echo "cloning" && git clone -b comeBack https://$GITHUB_TOKEN@github.com/alpertoruun/VotingAppwithDockerandAWS.git .
 
-# Ortam değişkenleri
-ENV PYTHONUNBUFFERED=1 \
-    DATABASE_URL=postgresql://postgres:mypassword1.@votingdb.cvc6y2g2aoqc.eu-west-1.rds.amazonaws.com:5432/postgres \
-    SECRET_KEY=928ee491f7ab3d6694821227fba3c33b \
-    DEBUG=False \
-    APP_SETTINGS=config.DevelopmentConfig \
-    FLASK_APP=src \
-    FLASK_DEBUG=0 \
-    FERNET_KEY="H_KAHfq4pkq6AnlNwmzVHs2RrSzi9jGykPp8EkGc4BA=" \
-    PREFERRED_URL_SCHEME=http \
-    SERVER_NAME="voting-elb-1942491963.eu-west-1.elb.amazonaws.com"
+RUN pip install --no-cache-dir -r requirements.txt
 
+# Cron için gerekli dizin ve log dosyaları
 RUN mkdir -p /opt/votingapp/logs
-
-RUN chmod +x /opt/votingapp/cron_wrapper.sh
+RUN touch /var/log/cron.log
 
 # Cron ayarları
-RUN touch /var/log/cron.log
 COPY <<'EOF' /etc/cron.d/vote-counter
 * * * * * /opt/votingapp/cron_wrapper.sh >> /var/log/cron.log
 EOF
 
 RUN chmod 0644 /etc/cron.d/vote-counter
 RUN crontab /etc/cron.d/vote-counter
-
-# Başlangıç scripti
+RUN chmod +x /opt/votingapp/cron_wrapper.sh
 RUN chmod +x /opt/votingapp/start.sh
+
+ENV DATABASE_URL="postgresql://postgres:mypassword1.@votingdb.cvc6y2g2aoqc.eu-west-1.rds.amazonaws.com:5432/postgres"
+ENV SECRET_KEY=928ee491f7ab3d6694821227fba3c33b
+ENV DEBUG=False
+ENV APP_SETTINGS=config.DevelopmentConfig
+ENV FLASK_APP=src
+ENV FLASK_DEBUG=0
+ENV FERNET_KEY="H_KAHfq4pkq6AnlNwmzVHs2RrSzi9jGykPp8EkGc4BA="
+ENV PREFERRED_URL_SCHEME=http
+
+RUN mkdir -p /opt/votingapp/static/uploads && \
+    chmod 777 /opt/votingapp/static/uploads
 
 EXPOSE 5000
 CMD ["/opt/votingapp/start.sh"]

@@ -28,16 +28,14 @@ class Config(object):
     PREFERRED_URL_SCHEME = config('PREFERRED_URL_SCHEME', default='http')
     APPLICATION_ROOT = '/'
 
-
 class DevelopmentConfig(Config):
-    DEVELOPMENT = True
-    DEBUG = True
+    DEVELOPMENT = False
+    DEBUG = False
     WTF_CSRF_ENABLED = False
     DEBUG_TB_ENABLED = True
     MAIL_SERVER = 'smtp.gmail.com'
     MAIL_PORT = 587
     MAIL_USE_TLS = True
     MAIL_USERNAME = 'alpertorun4455@gmail.com'
-    MAIL_PASSWORD = 'ydpj xeht iwrr raip'
-
+    MAIL_PASSWORD = 'xxxxx'
 

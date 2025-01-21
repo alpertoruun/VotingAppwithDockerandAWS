@@ -544,7 +544,7 @@ def create_election():
         # TC'lerin benzersiz olduğunu kontrol et
         if len(voter_tcs) != len(set(voter_tcs)):
             flash("Aynı TC kimlik numarası birden fazla kez eklenemez.", "warning")
-            return redirect(url_for('core.create_election'))
+            return redirect(url_for('core.create_election'), _external=True)
 
         # Kullanıcıları doğrula
         valid_users = []
@@ -566,7 +566,7 @@ def create_election():
 
         # Hata varsa formu tekrar yükle
         if error:
-            return redirect(url_for('core.create_election'))
+            return redirect(url_for('core.create_election'), _external=True)
         # Kullanıcıları doğrula
         valid_users = []
         for tc in voter_tcs:
@@ -606,7 +606,7 @@ def create_election():
         flash('Oylama başarıyla oluşturuldu!', "success")
         return redirect(url_for("core.my_elections", _external=True))
 
-    return render_template("core/index.html")
+    return render_template("core/index.html", _external=True)
 
 @core_bp.route('/get_user_info', methods=['POST'])
 @login_required
