@@ -9,6 +9,11 @@ from flask_wtf import CSRFProtect
 from cryptography.fernet import Fernet
 import logging
 from src.utils.encrypt_election_id import encrypt_id, decrypt_id
+from flask_apscheduler import APScheduler
+from datetime import datetime
+
+# Scheduler'ı en başta oluştur
+scheduler = APScheduler()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,6 +51,25 @@ app.extensions['fernet'] = Fernet(fernet_key)
 
 csrf = CSRFProtect(app)
 
+# Scheduler işlevi
+def scheduled_vote_counter():
+    with app.app_context():
+        try:
+            print(f"Oy sayım işlemi başlatılıyor - {datetime.now()}")
+            from src.utils.count_votes_utils import count_votes
+            count_votes()
+            print("Oy sayım işlemi başarıyla tamamlandı")
+        except Exception as e:
+            print(f"Oy sayım sırasında hata oluştu: {str(e)}")
+
+# Scheduler'ı başlat
+scheduler.init_app(app)
+scheduler.add_job(id='vote_counter', 
+                 func=scheduled_vote_counter,
+                 trigger='interval',
+                 minutes=app.config.get('SCHEDULER_INTERVAL_MINUTES', 1))
+scheduler.start()
+
 # Registering blueprints
 from src.accounts.views import accounts_bp
 from src.core.views import core_bp
@@ -58,8 +82,6 @@ from src.accounts.models import User
 login_manager.login_view = "accounts.login"
 login_manager.login_message_category = "danger"
 
-
-
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.filter(User.id == int(user_id)).first()
@@ -70,11 +92,9 @@ def load_user(user_id):
 def unauthorized_page(error):
     return render_template("errors/401.html"), 401
 
-
 @app.errorhandler(404)
 def page_not_found(error):
     return render_template("errors/404.html"), 404
-
 
 @app.errorhandler(500)
 def server_error_page(error):
